@@ -19,10 +19,10 @@ So it will effectively refuses only bad random queries
 
 `softblock-bf-size`
 
-  Size of bloomfilter's bitfield (in bytes). You need to 1.2g
-  to store 1 billion (1,000,000,000) NOERROR QNAMEs into BF
-  under 1% false positive rate.
-  
+  Size of bloomfilter's bitfield (in bytes). You need 9.6 bits
+  per one NOERROR QNAMEs under 1% false positive.
+  i.e. 1 billion (1,000,000,000) QNAMEs needs 1.2g
+
 `softblock-interval`
 
   BF is reset every this interval (in seconds).
