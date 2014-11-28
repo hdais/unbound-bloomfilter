@@ -9,11 +9,11 @@ resolves victim.com.
   This patch for unbound adds a new blocking mode "softblock".
 It learns QNAMEs resulted in NOERROR using bloomfilter at all time, and
 if you applied a domain to softblock and unbound receives queries
-for this domain it accepts only QNAMEs whose result was NOERROR in past.
+for this domain, it accepts only QNAMEs whose result was NOERROR in past.
 So it will effectively refuses only bad random queries
 (result will be cache miss and NXDOMAIN).
 
-# To Enabe softblock bloomfilter learning
+# To Enable softblock bloomfilter learning
 
   set these options in unbound.conf:
 
