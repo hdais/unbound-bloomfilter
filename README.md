@@ -1,4 +1,4 @@
-  This implements a mitigation of random subdomain attack
+  This patch implements a mitigation of random subdomain attack
 against DNS resolver using bloomfilter.
 
   When DNS resolver operators suffers from random subdomain attack
