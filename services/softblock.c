@@ -9,6 +9,7 @@
 #include "util/data/dname.h"
 #include "util/log.h"
 #include "util/locks.h"
+#include "util/random.h"
 #include "ldns/str2wire.h"
 #include "ldns/wire2str.h"
 #include "services/softblock.h"
@@ -16,7 +17,7 @@
 
 uint64_t siphash24(const void *, unsigned long, const char[]);
 
-struct bloomfilter *bf_create(size_t size, size_t k, char *key,
+struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
 			      time_t now, int interval) {
 
   struct bloomfilter *bf;
@@ -48,7 +49,9 @@ struct bloomfilter *bf_create(size_t size, size_t k, char *key,
     bf_destroy(bf);
     return NULL;
   }
-  memcpy(bf->key, key, 16);
+  for(i=0;i<16;i++) {
+    bf->key[i] = ub_random_max(rand, 256);
+  }
 
   bf->field[0] = malloc(size * 2);
   if(!bf->field[0]) {

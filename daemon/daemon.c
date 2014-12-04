@@ -532,7 +532,7 @@ daemon_fork(struct daemon* daemon)
 		fatal_exit("Could not create local zones: out of memory");
 	if(!local_zones_apply_cfg(daemon->local_zones, daemon->cfg))
 		fatal_exit("Could not set up local zones");
-	if(!(daemon->bf_softblock = bf_create(daemon->cfg->softblock_bf_size, 7, "0123456789abcdef", time(NULL), daemon->cfg->softblock_interval)))
+	if(!(daemon->bf_softblock = bf_create(daemon->cfg->softblock_bf_size, 7, daemon->rand, time(NULL), daemon->cfg->softblock_interval)))
 	  fatal_exit("Could not create bf_softblock: out of memory");
 
 	/* setup modules */

@@ -6,6 +6,7 @@
 #include <time.h>
 
 #include "util/locks.h"
+#include "util/random.h"
 
 #define BF_BLOCKSIZE 64
 
@@ -29,7 +30,7 @@ struct bloomfilter {
 };
 
 void bf_destroy(struct bloomfilter *bf);
-struct bloomfilter *bf_create(size_t size, size_t k, char *key,
+struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
                               time_t now, int interval);
 
 void softblock_learn(struct bloomfilter *bf, uint8_t *name, size_t namelen,
