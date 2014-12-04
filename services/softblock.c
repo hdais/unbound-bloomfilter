@@ -50,7 +50,7 @@ struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
     return NULL;
   }
   for(i=0;i<16;i++) {
-    bf->key[i] = ub_random_max(rand, 256);
+    bf->key[i] = ub_random_max(rnd, 256);
   }
 
   bf->field[0] = malloc(size * 2);
