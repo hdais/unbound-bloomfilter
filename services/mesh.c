@@ -46,6 +46,7 @@
 #include "services/mesh.h"
 #include "services/outbound_list.h"
 #include "services/cache/dns.h"
+#include "services/softblock.h"
 #include "util/log.h"
 #include "util/net_help.h"
 #include "util/module.h"
@@ -283,7 +284,8 @@ int mesh_make_new_space(struct mesh_area* mesh, sldns_buffer* qbuf)
 void mesh_new_client(struct mesh_area* mesh, struct query_info* qinfo,
         uint16_t qflags, struct edns_data* edns, struct comm_reply* rep,
 		     uint16_t qid)
-{
+	{
+	/* log_requestlist(mesh); */
 	struct mesh_state* s = mesh_area_find(mesh, qinfo, qflags&(BIT_RD|BIT_CD), 0, 0);
 	int was_detached = 0;
 	int was_noreply = 0;

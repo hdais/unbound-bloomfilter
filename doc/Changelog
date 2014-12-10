@@ -1,3 +1,17 @@
+8 December 2014: Wouter
+	- Fix CVE-2014-8602: denial of service by making resolver chase
+	  endless series of delegations.
+
+1 December 2014: Wouter
+	- Fix bug#632: unbound fails to build on AArch64, protects
+	  getentropy compat code from calling sysctl if it is has been removed.
+
+29 November 2014: Wouter
+	- Add include to getentropy_linux.c, hopefully fixing debian build.
+
+28 November 2014: Wouter
+	- Fix makefile for build from noexec source tree.
+
 26 November 2014: Wouter
 	- Fix libunbound undefined symbol errors for main.
 	  Referencing main does not seem to be possible for libunbound.
