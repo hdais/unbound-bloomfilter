@@ -3,17 +3,19 @@ against DNS resolver using bloomfilter.
 
   When DNS resolver operators suffers from random subdomain attack
 they often block all queries for victim.com at their resolvers.
-It mitigates attack effectively but the resolver no longer
-resolves victim.com. 
+It mitigates the attack effectively but the resolver no longer
+resolves victim.com -- It is attacker's goal: DoS of victim.com.
 
   This patch for unbound adds a new blocking mode "softblock".
-It learns QNAMEs resulted in NOERROR using bloomfilter at all time, and
-if you applied a domain to softblock and unbound receives queries
-for this domain, it accepts only QNAMEs whose result was NOERROR in past.
-So it will effectively refuses only bad random queries
-(result will be cache miss and NXDOMAIN).
+It learns QNAMEs which resulted in NOERROR using bloomfilter at all time.
+If you have set a domain to softblock and Unbound receives queries
+for this domain, it accepts only QNAMEs that matches to bloomfilter -- 
+i.e. query result was NOERROR in past.
 
-# To Enable softblock bloomfilter learning
+So it will effectively refuses only bad random queries
+(bad query will result cache miss and NXDOMAIN).
+
+# Enabling softblock bloomfilter learning
 
   set these options in unbound.conf:
 
@@ -21,7 +23,10 @@ So it will effectively refuses only bad random queries
 
   Size of bloomfilter's bitfield (in bytes). You need 9.6 bits
   per one NOERROR QNAMEs under 1% false positive.
-  i.e. 1 billion (1,000,000,000) QNAMEs needs 1.2g
+  E.g. 1 billion (1,000,000,000) QNAMEs needs "1.2g".
+
+  A plain number is in bytes, append 'k', 'm'  or  'g'
+  for  kilobytes,  megabytes  or  gigabytes.
 
 `softblock-interval`
 
@@ -38,5 +43,3 @@ So it will effectively refuses only bad random queries
     $ unbound-control local_zone victim.com softblock
   
   victim.com is a domain which is under random subdomain attack.
-
-
