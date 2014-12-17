@@ -1209,7 +1209,7 @@ arc4random_uniform.lo arc4random_uniform.o: $(srcdir)/compat/arc4random_uniform.
 arc4_lock.lo arc4_lock.o: $(srcdir)/compat/arc4_lock.c config.h $(srcdir)/util/locks.h
 sha512.lo sha512.o: $(srcdir)/compat/sha512.c config.h
 
-softblock.lo softblock.o: $(srcdir)/services/softblock.c $(srcdir)/services/softblock.h $(srcdir)/util/data/dname.h $(srcdir)/ldns/str2wire.h $(srcdir)/ldns/wire2str.h $(srcdir)/services/mesh.h $(srcdir)/services/publicsuffix.h config.h
+softblock.lo softblock.o: $(srcdir)/services/softblock.c $(srcdir)/services/softblock.h $(srcdir)/util/data/dname.h $(srcdir)/ldns/str2wire.h $(srcdir)/ldns/wire2str.h $(srcdir)/services/mesh.h $(srcdir)/services/publicsuffix.h $(srcdir)/services/softblock_validrtype.h config.h
 
 csiphash.lo csiphash.o: $(srcdir)/services/csiphash.c
 

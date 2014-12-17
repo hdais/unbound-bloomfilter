@@ -909,7 +909,7 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 		server_stats_insrcode(&worker->stats, c->buffer);
 		goto send_reply;
 	}
-	if(softblock && !softblock_check(worker->daemon->bf_softblock, qinfo.qname, qinfo.qname_len, *worker->env.now)) {
+	if(softblock && !softblock_check(worker->daemon->bf_softblock, &qinfo, *worker->env.now)) {
 		sldns_buffer_set_limit(c->buffer, LDNS_HEADER_SIZE);
                 sldns_buffer_write_at(c->buffer, 4,
                         (uint8_t*)"\0\0\0\0\0\0\0\0", 8);

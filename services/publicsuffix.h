@@ -1,5 +1,5 @@
 /* taken from https://publicsuffix.org/list/effective_tld_names.dat */
-/* at Sat Dec  6 17:19:58 2014 UTC */
+/* at Thu Dec 11 17:07:45 2014 UTC */
 #ifndef SERVICES_PUBLICSUFFIXLIST_H
 #define SERVICES_PUBLICSUFFIXLIST_H
 static char *publicsuffix[] = {

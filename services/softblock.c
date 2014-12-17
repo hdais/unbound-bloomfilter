@@ -16,6 +16,7 @@
 #include "cache/dns.h"
 #include "services/mesh.h"
 #include "services/publicsuffix.h"
+#include "services/softblock_validrtype.h"
 #include "daemon/daemon.h"
 #include "daemon/worker.h"
 
@@ -229,7 +230,7 @@ uint8_t *psl_registrabledomain(struct psl *psl, uint8_t *name, size_t namelen,
 
   int namelabs = dname_count_labels(name);
   uint8_t *b_name, *prev_name, *prev_prev_name, *match_name;
-  size_t b_namelen, b_namelabs, prev_namelen, prev_prev_namelen;
+  int b_namelen, b_namelabs, prev_namelen, prev_prev_namelen, match_namelen;
   struct psrule *psr, *epsr;
 
   while(namelabs > psl->max_namelabs + 2) {
@@ -245,6 +246,7 @@ uint8_t *psl_registrabledomain(struct psl *psl, uint8_t *name, size_t namelen,
   prev_name = NULL;
   prev_prev_name = NULL;
   match_name = NULL;
+  match_namelen = -1;
   prev_namelen = -1;
   prev_prev_namelen = -1;
   while(namelabs > 0) {
@@ -252,10 +254,12 @@ uint8_t *psl_registrabledomain(struct psl *psl, uint8_t *name, size_t namelen,
     if(psr) {
       if(psr->wildcard && prev_name) {
 	match_name = prev_name;
+	match_namelen = prev_namelen;
 	break;
       }
       if(psr->thisname) {
 	match_name = name;
+	match_namelen = namelen;
 	break;
       }
     }
@@ -277,6 +281,7 @@ uint8_t *psl_registrabledomain(struct psl *psl, uint8_t *name, size_t namelen,
   prev_name = NULL;
   prev_prev_name = NULL;
   match_name = NULL;
+  match_namelen = -1;
   prev_namelen = -1;
   prev_prev_namelen = -1;
   namelabs = b_namelabs;
@@ -289,23 +294,25 @@ uint8_t *psl_registrabledomain(struct psl *psl, uint8_t *name, size_t namelen,
 
       if(psr->wildcard && prev_name) {
 	match_name = prev_prev_name;
+	match_namelen = prev_prev_namelen;
 	break;
       }
       if (psr->thisname) {
 	match_name = prev_name;
+	match_namelen = prev_namelen;
 	break;
       }
     }
     prev_prev_name = prev_name;
     prev_name = name;
-       
+
     prev_prev_namelen = namelen;
     prev_namelen = namelen;
     dname_remove_label(&name, &namelen);
     namelabs --;
   }
   if(match_name) {
-    *suffixlen = namelen;
+    *suffixlen = match_namelen;
     return match_name;
   }
   return NULL;
@@ -518,11 +525,29 @@ void softblock_learn(struct bloomfilter *bf, uint8_t *name, size_t namelen,
      bf_set(bf, name, namelen, now);
 }
 
-int softblock_check(struct bloomfilter *bf, uint8_t *name, size_t namelen,
+
+int rtypecmp(const void *p, const void *q) {
+  return *((uint16_t *)p) - *((uint16_t *)q);
+}
+
+int allowed_qtype_qclass(struct query_info *q) {
+
+  if(q->qclass == 1 &&
+     bsearch(&q->qtype, validrtype, sizeof(validrtype),
+	     sizeof(validrtype[0]), rtypecmp)) {
+    return 1;
+  }
+
+  return 0;
+
+}
+
+int softblock_check(struct bloomfilter *bf, struct query_info* qinfo,
 		    time_t now)
 {
   if(bf->on) {
-     return bf_check(bf, name, namelen, now);
+     return bf_check(bf, qinfo->qname, qinfo->qname_len, now)
+       && allowed_qtype_qclass(qinfo);
   }
   return 1;
 }
@@ -530,12 +555,52 @@ int softblock_check(struct bloomfilter *bf, uint8_t *name, size_t namelen,
 struct suffix {
   uint8_t *name;
   size_t namelen;
-  size_t namelabs;
   size_t count;
+  uint64_t hash;
+  struct suffix *next;
 };
 
+/*
+struct hashtable {
+  void **table;
+  size_t bucketsize;
+};
+*/
+
+void suffix_destroy(struct suffix *s) {
+  if(!s)return;
+  if(s->name) free(s->name);
+  free(s);
+}
 
 
+
+struct suffix *suffix_create(uint8_t *name, size_t namelen) {
+  struct suffix *s;
+  char buf[257];
+  s = malloc(sizeof(struct suffix));
+  if(!s) return NULL;
+
+  s->name = NULL;
+  s->namelen = namelen;
+  s->count = 0;
+
+  s->name = malloc(namelen);
+  if(!s->name) {
+    suffix_destroy(s);
+    return NULL;
+  }
+  memcpy(s->name, name, namelen);
+  s->next = NULL;
+  dname_str(s->name, buf);
+  log_info("suffix: %s", buf);
+  return s;
+}
+
+
+int suffixcntcmp(const void *a, const void *b) {
+  return (*(struct suffix **)b)->count - (*(struct suffix **)a)->count;
+}
 
 void log_requestlist(struct mesh_area* mesh) {
   char buf[257];
@@ -543,23 +608,82 @@ void log_requestlist(struct mesh_area* mesh) {
   size_t qname_len, suffix_len;
   struct psl *psl;
   struct mesh_state *m;
+  int i, j, bucketsize, index, allcount;
+  uint64_t h;
+  struct suffix *p, *q;
 
   if(!mesh) return;
 
   psl = mesh->env->worker->daemon->bf_softblock->psl;
+  if(mesh->all.count < 1) return;
 
+  bucketsize = mesh->all.count * 8;
+  struct suffix **s;
+  s = malloc(sizeof(struct suffix *) * bucketsize);
+  if(!s) return;
+  for(i=0;i<bucketsize;i++) s[i] = NULL;
+  
+  allcount = 0;
   RBTREE_FOR(m, struct mesh_state*, &mesh->all) {
     qname_len = m->s.qinfo.qname_len;
     qname = malloc(qname_len);
-    memcpy(qname, m->s.qinfo.qname, qname_len);
-    query_dname_tolower(qname);
-
     if(qname) {
-      if(m->reply_list) {
-	d = psl_registrabledomain(psl, qname, qname_len, &suffix_len);
+      memcpy(qname, m->s.qinfo.qname, qname_len);
+      query_dname_tolower(qname);
+      d = psl_registrabledomain(psl, qname, qname_len, &suffix_len);
+      h = siphash24(d, suffix_len, "01234567890123456");
+      index = h % bucketsize;
+      p = s[index];
+      while(p) {
+	if(p->hash == h && query_dname_compare(p->name, d) == 0) break;
+	p = p->next;
+      }
+      if(p) {
+	p->count ++;
+      } else {
+	p = suffix_create(d, suffix_len);
+	if(p) {
+	  p->hash = h;
+	  p->next = s[index];
+	  s[index] = p;
+	  p->count = 1;
+	  allcount ++;
+	}
       }
       free(qname);
     }
-
   }
+
+  struct suffix **t = malloc(allcount * sizeof(struct suffix*));
+
+  if(t) {
+    j = 0;
+    for(i=0;i < bucketsize; i++) {
+      p = s[i];
+      while(p) {
+	t[j] = p;
+	j++ ;
+	p = p->next;
+      }
+    }
+    qsort(t, allcount, sizeof(struct suffix*), suffixcntcmp);
+    for(i = 0; i < allcount; i++) {
+      dname_str(t[i]->name, buf);
+      log_info("softblock suffix(sorted): %s = %d", buf, t[i]->count);
+    }
+    free(t);
+  }
+
+  log_info("listing...");
+  for(i = 0; i < bucketsize; i++) {
+    while(s[i]) {
+      dname_str(s[i]->name, buf);
+      log_info("softblock suffix(notsorted): %s = %d", buf, s[i]->count);
+      p = s[i]->next;
+      suffix_destroy(s[i]);
+      s[i] = p;
+    }
+  }
+  free(s);
+
 }

@@ -63,7 +63,7 @@ struct bloomfilter *bf_create(size_t, size_t, struct ub_randstate *,
 void softblock_learn(struct bloomfilter *, uint8_t *, size_t,
                         time_t);
 
-int softblock_check(struct bloomfilter *, uint8_t *, size_t,
+int softblock_check(struct bloomfilter *, struct query_info* qinfo,
                     time_t);
 
 void log_requestlist(struct mesh_area*);
