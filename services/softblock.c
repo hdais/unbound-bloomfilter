@@ -1,11 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <stdint.h>
-#include <string.h>
-#include <time.h>
-
 #include "config.h"
+#include "services/mesh.h"
 #include "util/data/dname.h"
 #include "util/log.h"
 #include "util/locks.h"
@@ -14,16 +8,18 @@
 #include "ldns/wire2str.h"
 #include "services/softblock.h"
 #include "cache/dns.h"
-#include "services/mesh.h"
 #include "services/publicsuffix.h"
 #include "services/softblock_validrtype.h"
 #include "daemon/daemon.h"
 #include "daemon/worker.h"
 
+#include <ctype.h>
+#include <string.h>
+
 uint64_t siphash24(const void *, unsigned long, const char[]);
 
 uint32_t fnv1a(uint8_t *p, size_t len) {
-  uint32_t h = 2166136261;
+  uint32_t h = 2166136261ULL;
   while(len > 0) {
     h = h ^ (*p);
     h = h * 16777619;
@@ -36,7 +32,7 @@ uint32_t fnv1a(uint8_t *p, size_t len) {
 struct psl *psl_create(size_t bucketsize) {
 
   struct psl *psl;
-  int i;
+  unsigned int i, n;
 
   psl = malloc(sizeof(struct psl));
   if(!psl) return NULL;
@@ -66,7 +62,6 @@ struct psl *psl_create(size_t bucketsize) {
    * PSL should be specified in config file
    */
 
-  int n;
   n = sizeof(publicsuffix) / sizeof(publicsuffix[0]);
   for(i = 0; i < n; i++) {
     if(!psl_insert(psl, publicsuffix[i]))
@@ -82,7 +77,7 @@ void psrule_destroy(struct psrule *p) {
 
 void psl_destroy(struct psl *psl) {
 
-  int i;
+  unsigned int i;
   struct psrule *p, *q;
   
   for(i=0;i < psl->bucketsize_rule; i++) {
@@ -110,12 +105,13 @@ struct psrule *psl_search(struct psl *psl, uint8_t *name, size_t namelen,
   size_t bucketsize;
 
   uint32_t hash;
+  int index;
 
   rules = erule?psl->exception_rule:psl->rule;
   bucketsize = erule?psl->bucketsize_exception_rule:psl->bucketsize_rule;
   
   hash = fnv1a(name, namelen);
-  int index = hash % bucketsize;
+  index = hash % bucketsize;
   psr = rules[index];
 
   while(psr) {
@@ -136,10 +132,12 @@ struct psrule *psl_insert(struct psl *psl, char *rule) {
   char *l, *p, *q;
   int exception_rule = 0;
   int wildcard = 0;
-  
   uint8_t *dname;
   size_t dname_len;
   size_t namelabs = 0;
+  struct psrule *psr;
+  struct psrule *newrule;
+
 
   l = rule;
   while(isspace(*l)) l++;       /* ignore leading space */
@@ -189,11 +187,7 @@ struct psrule *psl_insert(struct psl *psl, char *rule) {
   query_dname_tolower(dname);
   namelabs = dname_count_labels(dname);
 
-  struct psrule *psr;
-
   psr = psl_search(psl, dname, dname_len, exception_rule);
-
-  struct psrule *newrule;
 
   if(!psr) {
     size_t bucketsize;
@@ -228,10 +222,10 @@ struct psrule *psl_insert(struct psl *psl, char *rule) {
 uint8_t *psl_registrabledomain(struct psl *psl, uint8_t *name, size_t namelen,
 			 size_t *suffixlen) {
 
-  int namelabs = dname_count_labels(name);
+  unsigned int namelabs = dname_count_labels(name);
   uint8_t *b_name, *prev_name, *prev_prev_name, *match_name;
   int b_namelen, b_namelabs, prev_namelen, prev_prev_namelen, match_namelen;
-  struct psrule *psr, *epsr;
+  struct psrule *psr;
 
   while(namelabs > psl->max_namelabs + 2) {
     dname_remove_label(&name, &namelen);
@@ -322,7 +316,7 @@ struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
 			      time_t now, int interval) {
 
   struct bloomfilter *bf;
-  unsigned int i, j;
+  unsigned int i;
 
   bf = malloc(sizeof(struct bloomfilter));
   if(!bf)return NULL;
@@ -610,7 +604,7 @@ void log_requestlist(struct mesh_area* mesh) {
   struct mesh_state *m;
   int i, j, bucketsize, index, allcount;
   uint64_t h;
-  struct suffix *p, *q;
+  struct suffix *p;
 
   if(!mesh) return;
 
