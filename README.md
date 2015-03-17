@@ -15,7 +15,7 @@ i.e. query result was NOERROR in past.
 So it will effectively refuses only bad random queries
 (bad query will result cache miss and NXDOMAIN).
 
-# Enabling softblock bloomfilter learning
+# Enabling bloomfilter learning
 
   set these options in unbound.conf:
 
@@ -38,8 +38,25 @@ So it will effectively refuses only bad random queries
       bloomfilter-interval: 86400
 
 
-# Protecting unbound from damage caused by random subdomain attack
+# To Protect unbound from damage caused by random subdomain attack
+
+Specify domain(s) to protect by:
 
     $ unbound-control local_zone victim.com bloomfilter
   
-  victim.com is a domain which is under random subdomain attack.
+victim.com is a domain which is under random subdomain attack.
+  
+# Automatic detection of domains under attack
+
+Add this option to unbound.conf:
+
+    `bloomfilter-threshold`
+
+automatically applies bloomfilter to zones whose number of long-lived (> 1500 milliseconds) query
+in requestlist exceeds `bloomfilter-threshold`.
+  
+## `unbound.conf` example
+     server:
+      bloomfilter-size: 1024m
+      bloomfilter-interval: 86400
+      bloomfilter-threshold: 100
