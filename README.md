@@ -50,7 +50,7 @@ victim.com is a domain which is under random subdomain attack.
 
 Add this option to unbound.conf:
 
-    `bloomfilter-threshold`
+    bloomfilter-threshold
 
 automatically applies bloomfilter to zones whose number of long-lived (> 1500 milliseconds) query
 in requestlist exceeds `bloomfilter-threshold`.
