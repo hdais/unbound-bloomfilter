@@ -338,10 +338,12 @@ struct config_file {
 	/** true to log dnstap FORWARDER_RESPONSE message events */
 	int dnstap_log_forwarder_response_messages;
 
-	/** softblock bloomfilter memory size */
-	size_t softblock_bf_size;
-	/** softblock bloomfilter interval */
-	int softblock_interval;
+	/** bloomfilter memory size */
+	size_t bloomfilter_size;
+	/** bloomfilter interval */
+	int bloomfilter_interval;
+	/** bloomfilter threshold */
+	int bloomfilter_threshold;
 };
 
 /**

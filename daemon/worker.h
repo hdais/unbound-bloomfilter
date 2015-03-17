@@ -52,6 +52,8 @@
 #include "daemon/stats.h"
 #include "util/module.h"
 #include "dnstap/dnstap.h"
+#include "services/bloomfilter.h"
+
 struct listen_dnsport;
 struct outside_network;
 struct config_file;
@@ -122,6 +124,8 @@ struct worker {
 	/** dnstap environment, changed for this thread */
 	struct dt_env dtenv;
 #endif
+	/** bloomfiltered domain list */
+	struct bf_blocklist *bf_blocklist;
 };
 
 /**

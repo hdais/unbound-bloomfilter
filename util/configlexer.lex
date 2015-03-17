@@ -346,10 +346,12 @@ dnstap-log-forwarder-query-messages{COLON}	{
 		YDVAR(1, VAR_DNSTAP_LOG_FORWARDER_QUERY_MESSAGES) }
 dnstap-log-forwarder-response-messages{COLON}	{
 		YDVAR(1, VAR_DNSTAP_LOG_FORWARDER_RESPONSE_MESSAGES) }
-softblock-bf-size{COLON}	{
-		YDVAR(1, VAR_SOFTBLOCK_BF_SIZE) }
-softblock-interval{COLON}	{
-		YDVAR(1, VAR_SOFTBLOCK_INTERVAL) }
+bloomfilter-size{COLON}	{
+		YDVAR(1, VAR_BLOOMFILTER_SIZE) }
+bloomfilter-interval{COLON}	{
+		YDVAR(1, VAR_BLOOMFILTER_INTERVAL) }
+bloomfilter-threshold{COLON}	{
+		YDVAR(1, VAR_BLOOMFILTER_THRESHOLD) }
 <INITIAL,val>{NEWLINE}		{ LEXOUT(("NL\n")); cfg_parser->line++; }
 
 	/* Quoted strings. Strip leading and ending quotes */

@@ -46,7 +46,7 @@
 #include "services/mesh.h"
 #include "services/outbound_list.h"
 #include "services/cache/dns.h"
-#include "services/softblock.h"
+#include "services/bloomfilter.h"
 #include "util/log.h"
 #include "util/net_help.h"
 #include "util/module.h"
@@ -285,7 +285,16 @@ void mesh_new_client(struct mesh_area* mesh, struct query_info* qinfo,
         uint16_t qflags, struct edns_data* edns, struct comm_reply* rep,
 		     uint16_t qid)
 	{
-	/* log_requestlist(mesh); */
+	log_requestlist(mesh);
+
+	if(qinfo && rep) {
+	  if(bf_blocked_domain(mesh, qinfo)) {
+	    error_encode(rep->c->buffer, LDNS_RCODE_REFUSED,
+			 qinfo, qid, qflags, edns);
+	    comm_point_send_reply(rep);
+	    return;
+	  }
+	}
 	struct mesh_state* s = mesh_area_find(mesh, qinfo, qflags&(BIT_RD|BIT_CD), 0, 0);
 	int was_detached = 0;
 	int was_noreply = 0;
@@ -924,10 +933,9 @@ void mesh_query_done(struct mesh_state* mstate)
 	struct reply_info* rep = (mstate->s.return_msg?
 		mstate->s.return_msg->rep:NULL);
 	/* learn result of user query only */
-	if(mstate->reply_list && rep && ((rep->flags & 0xf) == 0)) {
-		softblock_learn(mstate->s.env->worker->daemon->bf_softblock, mstate->s.qinfo.qname, mstate->s.qinfo.qname_len, *(mstate->s.env->now));
+	if(mstate->reply_list && rep && ((rep->flags & 0xf) == 0))  {
+		bloomfilter_learn(mstate->s.env->worker->daemon->bloomfilter, mstate->s.qinfo.qname, mstate->s.qinfo.qname_len, *(mstate->s.env->now));
 	}
-
 	for(r = mstate->reply_list; r; r = r->next) {
 		mesh_send_reply(mstate, mstate->s.return_rcode, rep, r, prev);
 		prev = r;

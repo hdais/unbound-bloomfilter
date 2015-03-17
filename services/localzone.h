@@ -71,8 +71,8 @@ enum localzone_type {
 	/** remove default AS112 blocking contents for zone
 	 * nodefault is used in config not during service. */
 	local_zone_nodefault,
-	/** softblock */
-	local_zone_softblock
+	/** bloomfilter */
+	local_zone_bloomfilter
 };
 
 /**
@@ -227,7 +227,7 @@ void local_zones_print(struct local_zones* zones);
  * value is true, but the buffer is cleared (empty).
  */
 int local_zones_answer(struct local_zones* zones, struct query_info* qinfo,
-		       struct edns_data* edns, struct sldns_buffer* buf, struct regional* temp, int *softblock);
+		       struct edns_data* edns, struct sldns_buffer* buf, struct regional* temp, int *bloomfilter);
 
 /**
  * Parse the string into localzone type.

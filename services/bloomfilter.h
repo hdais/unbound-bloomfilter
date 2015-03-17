@@ -1,5 +1,5 @@
-#ifndef SERVICE_SOFTBLOCK_H
-#define SERVICE_SOFTBLOCK_H
+#ifndef SERVICE_BLOOMFILTER_H
+#define SERVICE_BLOOMFILTER_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -10,6 +10,8 @@
 #include "services/mesh.h"
 
 #define BF_BLOCKSIZE 64
+
+#define BF_BLOCKLIST_UPDATE_INTERVAL 10
 
 struct psrule {
   uint8_t *name;
@@ -47,8 +49,30 @@ struct bloomfilter {
 
   lock_quick_t lock;
 
+  struct bf_blocklist *blocklist;
+
   int on;
+  int threshold;
 };
+
+
+struct domain {
+  uint8_t *name;
+  size_t namelen;
+  size_t count;
+  uint64_t hash;
+  time_t laststatechanged;
+  int state;
+  struct domain *next;
+};
+
+struct bf_blocklist {
+  char *key; /* 16 bytes long */
+  size_t bucketsize;
+  struct domain **bd;
+  time_t lastupdate;
+};
+
 
 struct psl *psl_create(size_t);
 void psl_destroy(struct psl *);
@@ -58,14 +82,18 @@ uint8_t *psl_registrabledomain(struct psl *, uint8_t *,
 
 void bf_destroy(struct bloomfilter *);
 struct bloomfilter *bf_create(size_t, size_t, struct ub_randstate *,
-                              time_t, int);
+                              time_t, int, int);
 
-void softblock_learn(struct bloomfilter *, uint8_t *, size_t,
+void bloomfilter_learn(struct bloomfilter *, uint8_t *, size_t,
                         time_t);
 
-int softblock_check(struct bloomfilter *, struct query_info* qinfo,
+int bloomfilter_check(struct bloomfilter *, struct query_info* qinfo,
                     time_t);
 
 void log_requestlist(struct mesh_area*);
+
+struct bf_blocklist *bf_blocklist_create(size_t);
+void bf_blocklist_destroy(struct bf_blocklist *);
+int bf_blocked_domain(struct mesh_area*, struct query_info* );
 
 #endif

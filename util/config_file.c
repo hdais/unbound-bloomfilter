@@ -199,8 +199,9 @@ config_create(void)
 	cfg->minimal_responses = 0;
 	cfg->rrset_roundrobin = 0;
 	cfg->max_udp_size = 4096;
-	cfg->softblock_bf_size = 0;
-	cfg->softblock_interval = 86400;
+	cfg->bloomfilter_size = 0;
+	cfg->bloomfilter_interval = 86400;
+	cfg->bloomfilter_threshold = 0;
 	if(!(cfg->server_key_file = strdup(RUN_DIR"/unbound_server.key"))) 
 		goto error_exit;
 	if(!(cfg->server_cert_file = strdup(RUN_DIR"/unbound_server.pem"))) 
@@ -431,8 +432,9 @@ int config_set_option(struct config_file* cfg, const char* opt,
 	else S_STR("control-cert-file:", control_cert_file)
 	else S_STR("module-config:", module_conf)
 	else S_STR("python-script:", python_script)
-	else S_MEMSIZE("softblock-bf-size", softblock_bf_size)
-	else S_NUMBER_NONZERO("softblock-interval:", softblock_interval)
+	else S_MEMSIZE("bloomfilter-size", bloomfilter_size)
+	else S_NUMBER_NONZERO("bloomfilter-interval:", bloomfilter_interval)
+	else S_NUMBER_NONZERO("bloomfilter-threshold:", bloomfilter_threshold)
 	/* val_sig_skew_min and max are copied into val_env during init,
 	 * so this does not update val_env with set_option */
 	else if(strcmp(opt, "val-sig-skew-min:") == 0)
@@ -693,8 +695,9 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_STR(opt, "python-script", python_script)
 	else O_DEC(opt, "val-sig-skew-min", val_sig_skew_min)
 	else O_DEC(opt, "val-sig-skew-max", val_sig_skew_max)
-	else O_MEM(opt, "softblock-bf-size", softblock_bf_size)
-	else O_DEC(opt, "softblock-interval", softblock_interval)
+	else O_MEM(opt, "bloomfilter-size", bloomfilter_size)
+	else O_DEC(opt, "bloomfilter-interval", bloomfilter_interval)
+	else O_DEC(opt, "bloomfilter-threshold", bloomfilter_threshold)
 	/* not here:
 	 * outgoing-permit, outgoing-avoid - have list of ports
 	 * local-zone - zones and nodefault variables

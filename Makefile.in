@@ -110,7 +110,7 @@ validator/validator.c validator/val_kcache.c validator/val_kentry.c \
 validator/val_neg.c validator/val_nsec3.c validator/val_nsec.c \
 validator/val_secalgo.c validator/val_sigcrypt.c \
 validator/val_utils.c dns64/dns64.c $(CHECKLOCK_SRC) $(DNSTAP_SRC) \
-services/softblock.c services/csiphash.c
+services/bloomfilter.c services/csiphash.c
 COMMON_OBJ_WITHOUT_NETCALL=dns.lo infra.lo rrset.lo dname.lo msgencode.lo \
 msgparse.lo msgreply.lo packed_rrset.lo iterator.lo iter_delegpt.lo \
 iter_donotq.lo iter_fwd.lo iter_hints.lo iter_priv.lo iter_resptype.lo \
@@ -122,7 +122,7 @@ slabhash.lo timehist.lo tube.lo winsock_event.lo autotrust.lo val_anchor.lo \
 validator.lo val_kcache.lo val_kentry.lo val_neg.lo val_nsec3.lo val_nsec.lo \
 val_secalgo.lo val_sigcrypt.lo val_utils.lo dns64.lo \
 $(PYTHONMOD_OBJ) $(CHECKLOCK_OBJ) $(DNSTAP_OBJ) \
-softblock.lo csiphash.lo
+bloomfilter.lo csiphash.lo
 COMMON_OBJ=$(COMMON_OBJ_WITHOUT_NETCALL) netevent.lo listen_dnsport.lo \
 outside_network.lo
 # set to $COMMON_OBJ or to "" if --enableallsymbols
@@ -1209,7 +1209,7 @@ arc4random_uniform.lo arc4random_uniform.o: $(srcdir)/compat/arc4random_uniform.
 arc4_lock.lo arc4_lock.o: $(srcdir)/compat/arc4_lock.c config.h $(srcdir)/util/locks.h
 sha512.lo sha512.o: $(srcdir)/compat/sha512.c config.h
 
-softblock.lo softblock.o: $(srcdir)/services/softblock.c $(srcdir)/services/softblock.h $(srcdir)/util/data/dname.h $(srcdir)/ldns/str2wire.h $(srcdir)/ldns/wire2str.h $(srcdir)/services/mesh.h $(srcdir)/services/publicsuffix.h $(srcdir)/services/softblock_validrtype.h config.h
+bloomfilter.lo bloomfilter.o: $(srcdir)/services/bloomfilter.c $(srcdir)/services/bloomfilter.h $(srcdir)/util/data/dname.h $(srcdir)/ldns/str2wire.h $(srcdir)/ldns/wire2str.h $(srcdir)/services/mesh.h $(srcdir)/services/publicsuffix.h $(srcdir)/services/bloomfilter_validrtype.h config.h
 
 csiphash.lo csiphash.o: $(srcdir)/services/csiphash.c
 

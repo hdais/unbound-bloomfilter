@@ -6,10 +6,10 @@
 #include "util/random.h"
 #include "ldns/str2wire.h"
 #include "ldns/wire2str.h"
-#include "services/softblock.h"
+#include "services/bloomfilter.h"
 #include "cache/dns.h"
 #include "services/publicsuffix.h"
-#include "services/softblock_validrtype.h"
+#include "services/bloomfilter_validrtype.h"
 #include "daemon/daemon.h"
 #include "daemon/worker.h"
 
@@ -313,7 +313,7 @@ uint8_t *psl_registrabledomain(struct psl *psl, uint8_t *name, size_t namelen,
 }
 
 struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
-			      time_t now, int interval) {
+			      time_t now, int interval, int threshold) {
 
   struct bloomfilter *bf;
   unsigned int i;
@@ -321,11 +321,11 @@ struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
   bf = malloc(sizeof(struct bloomfilter));
   if(!bf)return NULL;
   if(size > 0) {
-        log_info("softblock enabled size=%zu", size);
+        log_info("bloomfilter enabled size=%zu", size);
 	bf->on = 1;
   } else {
 	bf->on = 0;
-        log_info("softblock disabled");
+        log_info("bloomfilter disabled");
         return bf;
   }
 
@@ -336,7 +336,7 @@ struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
   bf->field[0] = NULL;
   bf->lastupdate[0] = NULL;
   bf->psl = NULL;
-
+  bf->threshold = threshold;
   bf->size = size;
   bf->k = k;
   lock_quick_init(&bf->lock);
@@ -443,7 +443,6 @@ void bf_set(struct bloomfilter *bf, uint8_t *name,
     h = bf_hash(bf, i, lname, namelen) % ((uint64_t)bf->size << 3);
     byteindex = h >> 3;
     luindex = byteindex / BF_BLOCKSIZE;
-    // log_info("bf_set: h = %llu, byteindex = %d", h, byteindex);
 
     /* clear this block if dirty */
     lock_quick_lock(&bf->lock);
@@ -512,11 +511,12 @@ int bf_check(struct bloomfilter *bf, uint8_t *name, size_t namelen,
   return match[0] | match[1];
 }
 
-void softblock_learn(struct bloomfilter *bf, uint8_t *name, size_t namelen,
+void bloomfilter_learn(struct bloomfilter *bf, uint8_t *name, size_t namelen,
 			time_t now)
 {
-  if(bf->on)
+  if(bf->on) {
      bf_set(bf, name, namelen, now);
+  };
 }
 
 
@@ -536,7 +536,7 @@ int allowed_qtype_qclass(struct query_info *q) {
 
 }
 
-int softblock_check(struct bloomfilter *bf, struct query_info* qinfo,
+int bloomfilter_check(struct bloomfilter *bf, struct query_info* qinfo,
 		    time_t now)
 {
   if(bf->on) {
@@ -546,138 +546,343 @@ int softblock_check(struct bloomfilter *bf, struct query_info* qinfo,
   return 1;
 }
 
-struct suffix {
-  uint8_t *name;
-  size_t namelen;
-  size_t count;
-  uint64_t hash;
-  struct suffix *next;
-};
-
-/*
-struct hashtable {
-  void **table;
-  size_t bucketsize;
-};
-*/
-
-void suffix_destroy(struct suffix *s) {
-  if(!s)return;
-  if(s->name) free(s->name);
-  free(s);
+void bf_blocklist_destroy(struct bf_blocklist *bl) {
+  unsigned int i;
+  struct domain *p, *q;
+  if(!bl) return;
+  if(bl->key) free(bl->key);
+  if(bl->bd) {
+    for(i = 0; i < bl->bucketsize; i++) {
+      p = bl->bd[i];
+      while(p) {
+	q = p->next;
+	free(p);
+	p = q;
+      }
+    }
+    free(bl->bd);
+  }
+  free(bl);
+  log_info("bf_blocklist deleted");
 }
 
+struct bf_blocklist *bf_blocklist_create(size_t bucketsize) {
 
+  struct bf_blocklist *bl;
+  unsigned int i;
+  log_info("bf_blocklist created");
+  bl = malloc(sizeof(struct bf_blocklist));
+  if(!bl) return NULL;
+  bl->key = NULL;
+  bl->bd = NULL;
+  bl->bucketsize = bucketsize;
+  bl->lastupdate = 0;
 
-struct suffix *suffix_create(uint8_t *name, size_t namelen) {
-  struct suffix *s;
-  char buf[257];
-  s = malloc(sizeof(struct suffix));
-  if(!s) return NULL;
-
-  s->name = NULL;
-  s->namelen = namelen;
-  s->count = 0;
-
-  s->name = malloc(namelen);
-  if(!s->name) {
-    suffix_destroy(s);
+  bl->key = malloc(16);
+  if(!bl->key) {
+    bf_blocklist_destroy(bl);
     return NULL;
   }
-  memcpy(s->name, name, namelen);
-  s->next = NULL;
-  dname_str(s->name, buf);
-  log_info("suffix: %s", buf);
-  return s;
+  for(i=0;i<16;i++) {
+    bl->key[i] = 0;
+  }
+
+  bl->bd = malloc(bucketsize * sizeof(struct domain *));
+  if(!bl->bd) {
+    bf_blocklist_destroy(bl);
+    return NULL;
+  }
+  for(i=0;i<bucketsize;i++) {
+    bl->bd[i] = NULL;
+  }
+
+  return bl;
 }
 
+void domain_destroy(struct domain *d) {
+  if(!d)return;
+  if(d->name)free(d->name);
+  free(d);
+}
 
-int suffixcntcmp(const void *a, const void *b) {
-  return (*(struct suffix **)b)->count - (*(struct suffix **)a)->count;
+struct domain *domain_create(uint8_t *name, size_t namelen) {
+  struct domain *d;
+
+  d = malloc(sizeof(struct domain));
+  if(!d) return NULL;
+  d->name = NULL;
+  d->count = 0;
+
+  d->name = malloc(namelen);
+  if(!d->name) {
+    domain_destroy(d);
+    return NULL;
+  }
+  memcpy(d->name, name, namelen);
+  d->namelen = namelen;
+  return d;
+}
+
+struct domain *domain_search(struct domain **d, size_t bucketsize, char *key,
+			     uint8_t *name, size_t namelen, int insert) {
+
+  int index;
+  uint64_t h;
+  struct domain *p;
+  h = siphash24(name, namelen, key);
+  index = h % bucketsize;
+  p = d[index];
+  while(p) {
+    if(p->hash == h && query_dname_compare(p->name, name)==0)break;
+    p = p->next;
+  }
+  
+  if(p || !insert) return p;
+
+  p = domain_create(name, namelen);
+  if(!p) return NULL;
+  p->hash = h;
+  p->next = d[index];
+  d[index] = p;
+  return p;
+}
+
+void domainlist_destroy(struct domain **d, size_t bucketsize) {
+  unsigned int i;
+  struct domain *p;
+
+  for(i=0;i<bucketsize;i++) {
+    while(d[i]) {
+      p = d[i]->next;
+      domain_destroy(d[i]);
+      d[i] = p;
+    }
+  }
+
+}
+
+void bf_blocklist_cleanup(struct domain **domainlist, size_t bucketsize) {
+
+  unsigned int i;
+  struct domain *p, *q;
+
+  /* clean up blockeddomain whose count < 10 */
+  for(i=0; i<bucketsize; i++) {
+    p = domainlist[i];
+    q = NULL;
+    while(p) {
+      if(p->count < 10) {
+	if(q) {
+	  q->next = p->next;
+	} else {
+	  domainlist[i] = p->next;
+	}
+	domain_destroy(p);
+      }
+      q = p;
+      p = p -> next;
+    }
+  }
+
+}
+
+uint8_t *psl_tld(uint8_t *name, size_t namelen) {
+  size_t namelabs;
+  namelabs = dname_count_labels(name);
+  if(namelabs < 1)return NULL;
+  while(namelabs > 1) {
+    dname_remove_label(&name, &namelen);
+    namelabs --;
+  }
+  return name;
 }
 
 void log_requestlist(struct mesh_area* mesh) {
-  char buf[257];
+  char buf[257], *key;
   uint8_t *qname, *d;
   size_t qname_len, suffix_len;
   struct psl *psl;
   struct mesh_state *m;
-  int i, j, bucketsize, index, allcount;
-  uint64_t h;
-  struct suffix *p;
+  unsigned int i, j, bucketsize, allcount;
+  time_t now;
+
+  struct domain *p, *q, **domainlist;
+  struct bf_blocklist *blocklist;
+  struct bloomfilter *bloomfilter;
 
   if(!mesh) return;
 
-  psl = mesh->env->worker->daemon->bf_softblock->psl;
-  if(mesh->all.count < 1) return;
+  now = mesh->env->now_tv->tv_sec;
+  blocklist = mesh->env->worker->bf_blocklist;
+  bloomfilter = mesh->env->worker->daemon->bloomfilter;
 
-  bucketsize = mesh->all.count * 8;
-  struct suffix **s;
-  s = malloc(sizeof(struct suffix *) * bucketsize);
-  if(!s) return;
-  for(i=0;i<bucketsize;i++) s[i] = NULL;
-  
+  if(bloomfilter->threshold < 1)return;
+  if(now - blocklist->lastupdate < BF_BLOCKLIST_UPDATE_INTERVAL)return;
+  blocklist->lastupdate = now;
+
+  psl = mesh->env->worker->daemon->bloomfilter->psl;
+  key = blocklist->key;
+
+  bucketsize = (mesh->all.count+1) * 8;
+
+  domainlist = malloc(sizeof(struct domain *) * bucketsize);
+  if(!domainlist) return;
+  for(i=0;i<bucketsize;i++) domainlist[i] = NULL;
+
   allcount = 0;
   RBTREE_FOR(m, struct mesh_state*, &mesh->all) {
-    qname_len = m->s.qinfo.qname_len;
-    qname = malloc(qname_len);
-    if(qname) {
-      memcpy(qname, m->s.qinfo.qname, qname_len);
-      query_dname_tolower(qname);
-      d = psl_registrabledomain(psl, qname, qname_len, &suffix_len);
-      h = siphash24(d, suffix_len, "01234567890123456");
-      index = h % bucketsize;
-      p = s[index];
-      while(p) {
-	if(p->hash == h && query_dname_compare(p->name, d) == 0) break;
-	p = p->next;
+    if(m->reply_list) {
+      struct mesh_reply *r = m->reply_list;
+      while( r && r->next) {
+	r = r->next;
       }
-      if(p) {
-	p->count ++;
-      } else {
-	p = suffix_create(d, suffix_len);
-	if(p) {
-	  p->hash = h;
-	  p->next = s[index];
-	  s[index] = p;
-	  p->count = 1;
-	  allcount ++;
+#ifndef S_SPLINT_S
+      if ( now - r->start_time.tv_sec >= 2 ) {
+	qname_len = m->s.qinfo.qname_len;
+	qname = malloc(qname_len);
+	if(qname) {
+	  memcpy(qname, m->s.qinfo.qname, qname_len);
+	  query_dname_tolower(qname);
+	  d = psl_registrabledomain(psl, qname, qname_len, &suffix_len);
+	  if(d) {
+	    p = domain_search(domainlist, bucketsize, key, d, suffix_len, 1);
+	    if(p) {
+	      p->count++;
+	    }
+	  }
+	  free(qname);
 	}
       }
-      free(qname);
+#endif
     }
   }
 
-  struct suffix **t = malloc(allcount * sizeof(struct suffix*));
 
-  if(t) {
-    j = 0;
-    for(i=0;i < bucketsize; i++) {
-      p = s[i];
-      while(p) {
-	t[j] = p;
-	j++ ;
-	p = p->next;
+  for(i=0;i < bucketsize; i++) {
+    p = domainlist[i];
+    while(p) {
+      q = domain_search(blocklist->bd, blocklist->bucketsize, key,
+			p->name, p->namelen, 1);
+      if(q) {
+	if(q->count == 0) { /* newly created */
+	  q->laststatechanged = now;
+	  q->state = 0;
+	  q->count = p->count;
+	} else {
+	  q->count = p->count;
+	}
       }
+      p = p->next;
     }
-    qsort(t, allcount, sizeof(struct suffix*), suffixcntcmp);
-    for(i = 0; i < allcount; i++) {
-      dname_str(t[i]->name, buf);
-      log_info("softblock suffix(sorted): %s = %d", buf, t[i]->count);
-    }
-    free(t);
   }
 
-  log_info("listing...");
-  for(i = 0; i < bucketsize; i++) {
-    while(s[i]) {
-      dname_str(s[i]->name, buf);
-      log_info("softblock suffix(notsorted): %s = %d", buf, s[i]->count);
-      p = s[i]->next;
-      suffix_destroy(s[i]);
-      s[i] = p;
+  int c = 0;
+  for(i=0; i<blocklist->bucketsize; i++) {
+    struct domain *s = NULL;
+    p = blocklist->bd[i];
+    while(p) {
+
+      q = domain_search(domainlist, bucketsize, key, p->name, p->namelen, 0);
+      if(!q) p->count = 0;
+
+      if((p->state == 0 && p->count < bloomfilter->threshold)
+	 || now - p->laststatechanged > 90 + ub_random_max(mesh->env->worker->rndstate, 180)) {
+	if(p->state != 0) {
+	  dname_str(p->name, buf);
+	  log_info("reqlist protection: deleted filtered domain: %s", buf);
+	}
+	if(s) {
+	  s->next = p->next;
+	} else {
+	  blocklist->bd[i] = p->next;
+	}
+	q = p->next;
+	domain_destroy(p);
+	p = q;
+      } else {
+	if(p->state == 0 && p->count >= bloomfilter->threshold) {
+	  dname_str(p->name, buf);
+	  log_info("reqlist protection: added bloomfiltered domain: %s numreq=%zu", buf, p->count);
+	  p->state = 1;
+	  p->laststatechanged = now;
+	}
+	if(p->state == 1 && p->count >= bloomfilter->threshold * 2
+		 && now - p->laststatechanged > 60) {
+	  dname_str(p->name, buf);
+	  log_info("reqlist protection: added all-filtered domain: %s numreq=%zu", buf, p->count);
+	  p->state = 2;
+	  p->laststatechanged = now;
+	}
+	s = p;
+	p = p -> next;
+      }
+
     }
   }
-  free(s);
+  domainlist_destroy(domainlist, bucketsize);
+
+}
+
+int bf_blocked_domain(struct mesh_area* mesh, struct query_info* qinfo) {
+
+  size_t namelabs;
+  uint8_t *lname, *lname_backup;
+  struct domain *p;
+  size_t namelen; 
+  int result = 0;
+  struct bf_blocklist *blocklist;
+  struct bloomfilter *bf;
+  time_t now;
+
+  if(!mesh || !qinfo)return 0;
+
+  blocklist = mesh->env->worker->bf_blocklist;
+  bf = mesh->env->worker->daemon->bloomfilter;
+  now = mesh->env->now_tv->tv_sec;
+
+  if(bf->threshold < 1)return 0;
+
+  namelen = qinfo->qname_len;
+  lname = malloc(namelen);
+  lname_backup = lname;
+  if(!lname) return 0;
+  memcpy(lname, qinfo->qname, qinfo->qname_len);
+  query_dname_tolower(lname);
+  namelabs = dname_count_labels(lname);
+
+  if(namelabs < 1) {
+    return 0;
+  }
+
+  do {
+    p = domain_search(blocklist->bd,
+		      blocklist->bucketsize,
+		      blocklist->key,
+		      lname, namelen, 0);
+    if(p) {
+      switch(p->state) {
+      case 0:
+	result = 0;
+	break;
+      case 1:
+	if(bloomfilter_check(bf, qinfo, now)) {
+	  result = 0;
+	} else {
+	  result = 1;
+	}
+	break;
+      case 2:
+	result = 1;
+	break;
+      }
+      break;
+    }
+    dname_remove_label(&lname, &namelen);
+    namelabs --;
+  } while(namelabs > 1);
+  
+  free(lname_backup);
+
+  return result;
 
 }

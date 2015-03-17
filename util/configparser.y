@@ -116,7 +116,7 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_DNSTAP_LOG_CLIENT_RESPONSE_MESSAGES
 %token VAR_DNSTAP_LOG_FORWARDER_QUERY_MESSAGES
 %token VAR_DNSTAP_LOG_FORWARDER_RESPONSE_MESSAGES
-%token VAR_SOFTBLOCK_BF_SIZE VAR_SOFTBLOCK_INTERVAL
+%token VAR_BLOOMFILTER_SIZE VAR_BLOOMFILTER_INTERVAL VAR_BLOOMFILTER_THRESHOLD
 
 %%
 toplevelvars: /* empty */ | toplevelvars toplevelvar ;
@@ -176,7 +176,7 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_minimal_responses | server_rrset_roundrobin | server_max_udp_size |
 	server_so_reuseport | server_delay_close | server_unblock_lan_zones |
 	server_dns64_prefix | server_dns64_synthall |
-        server_softblock_bf_size | server_softblock_interval
+        server_bloomfilter_size | server_bloomfilter_interval | server_bloomfilter_threshold
 	;
 stubstart: VAR_STUB_ZONE
 	{
@@ -1263,21 +1263,29 @@ forward_first: VAR_FORWARD_FIRST STRING_ARG
 		free($2);
 	}
 	;
-server_softblock_bf_size: VAR_SOFTBLOCK_BF_SIZE STRING_ARG
+server_bloomfilter_size: VAR_BLOOMFILTER_SIZE STRING_ARG
 	{
-		OUTYY(("P(softblock-bf-size:%s)\n", $2));
-		if(!cfg_parse_memsize($2, &cfg_parser->cfg->softblock_bf_size))
+		OUTYY(("P(bloomfilter-size:%s)\n", $2));
+		if(!cfg_parse_memsize($2, &cfg_parser->cfg->bloomfilter_size))
 			yyerror("memory size expected");
 		free($2);
 	}
         ;
-server_softblock_interval: VAR_SOFTBLOCK_INTERVAL STRING_ARG
+server_bloomfilter_interval: VAR_BLOOMFILTER_INTERVAL STRING_ARG
 	{
-		OUTYY(("P(softblock-interval:%s)\n", $2));
+		OUTYY(("P(bloomfilter-interval:%s)\n", $2));
 		if(atoi($2) == 0 && strcmp($2, "0") != 0 || atoi($2) < 1)
 			 yyerror("positive number expected");
-		else cfg_parser->cfg->softblock_interval = atoi($2);
+		else cfg_parser->cfg->bloomfilter_interval = atoi($2);
         }
+	;
+server_bloomfilter_threshold: VAR_BLOOMFILTER_THRESHOLD STRING_ARG
+	{
+		OUTYY(("P(bloomfilter-threshold:%s)\n", $2));
+		if(atoi($2) == 0 && strcmp($2, "0") != 0 || atoi($2) < 1)
+			yyerror("positive number expected");
+		else cfg_parser->cfg->bloomfilter_threshold = atoi($2);
+	}
 	;
 rcstart: VAR_REMOTE_CONTROL
 	{ 

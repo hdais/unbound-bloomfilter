@@ -85,7 +85,7 @@
 #include "util/tube.h"
 #include "util/net_help.h"
 #include "ldns/keyraw.h"
-#include "services/softblock.h"
+#include "services/bloomfilter.h"
 #include <signal.h>
 
 /** How many quit requests happened. */
@@ -532,8 +532,9 @@ daemon_fork(struct daemon* daemon)
 		fatal_exit("Could not create local zones: out of memory");
 	if(!local_zones_apply_cfg(daemon->local_zones, daemon->cfg))
 		fatal_exit("Could not set up local zones");
-	if(!(daemon->bf_softblock = bf_create(daemon->cfg->softblock_bf_size, 7, daemon->rand, time(NULL), daemon->cfg->softblock_interval)))
-	  fatal_exit("Could not create bf_softblock: out of memory");
+	if(!(daemon->bloomfilter = bf_create(daemon->cfg->bloomfilter_size, 7, daemon->rand,
+		time(NULL), daemon->cfg->bloomfilter_interval, daemon->cfg->bloomfilter_threshold)))
+	  fatal_exit("Could not create bloomfilter: out of memory");
 
 	/* setup modules */
 	daemon_setup_modules(daemon);
@@ -591,7 +592,7 @@ daemon_cleanup(struct daemon* daemon)
 	slabhash_clear(&daemon->env->rrset_cache->table);
 	slabhash_clear(daemon->env->msg_cache);
 	local_zones_delete(daemon->local_zones);
-	bf_destroy(daemon->bf_softblock);
+	bf_destroy(daemon->bloomfilter);
 	daemon->local_zones = NULL;
 	/* key cache is cleared by module desetup during next daemon_init() */
 	daemon_remote_clear(daemon->rc);

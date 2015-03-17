@@ -45,7 +45,7 @@
 #include "util/locks.h"
 #include "util/alloc.h"
 #include "services/modstack.h"
-#include "services/softblock.h"
+#include "services/bloomfilter.h"
 #ifdef UB_ON_WINDOWS
 #  include "util/winsock_event.h"
 #endif
@@ -115,7 +115,7 @@ struct daemon {
 	struct timeval time_last_stat;
 	/** time when daemon started */
 	struct timeval time_boot;
-  struct bloomfilter *bf_softblock;
+  struct bloomfilter *bloomfilter;
 
 #ifdef USE_DNSTAP
 	/** the dnstap environment master value, copied and changed by threads*/

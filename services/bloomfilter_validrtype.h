@@ -1,5 +1,5 @@
-#ifndef SOFTBLOCK_VALIDRTYPE
-#define SOFTBLOCK_VALIDRTYPE
+#ifndef BLOOMFILTER_VALIDRTYPE
+#define BLOOMFILTER_VALIDRTYPE
 
 static uint16_t validrtype[] = {
   1,              /* A */
@@ -46,4 +46,4 @@ static uint16_t validrtype[] = {
   255,            /* ANY */
 };
 
-#endif /* SOFTBLOCK_VALIDRTYPE */
+#endif /* BLOOMFILTER_VALIDRTYPE */

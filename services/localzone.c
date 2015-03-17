@@ -1022,8 +1022,8 @@ void local_zones_print(struct local_zones* zones)
 			log_nametypeclass(0, "static zone", 
 				z->name, 0, z->dclass);
 			break;
-                case local_zone_softblock:
-                        log_nametypeclass(0, "softblock zone",
+                case local_zone_bloomfilter:
+                        log_nametypeclass(0, "bloomfilter zone",
 		                z->name, 0, z->dclass);
                         break;
 		default:
@@ -1121,9 +1121,9 @@ local_data_answer(struct local_zone* z, struct query_info* qinfo,
 static int
 lz_zone_answer(struct local_zone* z, struct query_info* qinfo,
 	struct edns_data* edns, sldns_buffer* buf, struct regional* temp,
-	       struct local_data* ld, int *softblock)
+	       struct local_data* ld, int *bloomfilter)
 {
-  *softblock = 0;
+	*bloomfilter = 0;
 	if(z->type == local_zone_deny) {
 		/** no reply at all, signal caller by clearing buffer. */
 		sldns_buffer_clear(buf);
@@ -1154,8 +1154,8 @@ lz_zone_answer(struct local_zone* z, struct query_info* qinfo,
 	} else if(z->type == local_zone_typetransparent) {
 		/* no NODATA or NXDOMAINS for this zone type */
 		return 0;
-	} else if(z->type == local_zone_softblock) {
-	  *softblock = 1;
+	} else if(z->type == local_zone_bloomfilter) {
+	  *bloomfilter = 1;
 	  return 0;
 	}
 	/* else z->type == local_zone_transparent */
@@ -1180,7 +1180,7 @@ lz_zone_answer(struct local_zone* z, struct query_info* qinfo,
 int 
 local_zones_answer(struct local_zones* zones, struct query_info* qinfo,
 		   struct edns_data* edns, sldns_buffer* buf,
-		   struct regional* temp, int *softblock)
+		   struct regional* temp, int *bloomfilter)
 {
 	/* see if query is covered by a zone,
 	 * 	if so:	- try to match (exact) local data 
@@ -1203,7 +1203,7 @@ local_zones_answer(struct local_zones* zones, struct query_info* qinfo,
 		lock_rw_unlock(&z->lock);
 		return 1;
 	}
-	r = lz_zone_answer(z, qinfo, edns, buf, temp, ld, softblock);
+	r = lz_zone_answer(z, qinfo, edns, buf, temp, ld, bloomfilter);
 	lock_rw_unlock(&z->lock);
 	return r;
 }
@@ -1218,7 +1218,7 @@ const char* local_zone_type2str(enum localzone_type t)
 		case local_zone_typetransparent: return "typetransparent";
 		case local_zone_static: return "static";
 		case local_zone_nodefault: return "nodefault";
-                case local_zone_softblock: return "softblock";
+                case local_zone_bloomfilter: return "bloomfilter";
 	}
 	return "badtyped"; 
 }
@@ -1237,8 +1237,8 @@ int local_zone_str2type(const char* type, enum localzone_type* t)
 		*t = local_zone_typetransparent;
 	else if(strcmp(type, "redirect") == 0)
 		*t = local_zone_redirect;
-        else if(strcmp(type, "softblock") == 0)
-	  *t = local_zone_softblock;
+        else if(strcmp(type, "bloomfilter") == 0)
+	  *t = local_zone_bloomfilter;
 	else return 0;
 	return 1;
 }
