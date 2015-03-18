@@ -95,5 +95,6 @@ void log_requestlist(struct mesh_area*);
 struct bf_blocklist *bf_blocklist_create(size_t);
 void bf_blocklist_destroy(struct bf_blocklist *);
 int bf_blocked_domain(struct mesh_area*, struct query_info* );
+void domainlist_destroy(struct domain**, size_t);
 
 #endif

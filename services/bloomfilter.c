@@ -552,17 +552,7 @@ void bf_blocklist_destroy(struct bf_blocklist *bl) {
   struct domain *p, *q;
   if(!bl) return;
   if(bl->key) free(bl->key);
-  if(bl->bd) {
-    for(i = 0; i < bl->bucketsize; i++) {
-      p = bl->bd[i];
-      while(p) {
-	q = p->next;
-	free(p);
-	p = q;
-      }
-    }
-    free(bl->bd);
-  }
+  if(bl->bd) domainlist_destroy(bl->bd, bl->bucketsize); 
   free(bl);
   log_info("bf_blocklist deleted");
 }
