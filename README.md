@@ -1,16 +1,16 @@
   This patch implements a mitigation of random subdomain attack
 against DNS resolver using bloomfilter.
 
-  When DNS resolver operators suffers from random subdomain attack
-they often block all queries for victim.com at their resolvers.
+  When DNS resolver operators suffer from random subdomain attack
+they often block all queries for target domain (e.g. example.com) at their resolvers.
 It mitigates the attack effectively but the resolver no longer
-resolves victim.com -- It is attacker's goal: DoS of victim.com.
+resolves example.com -- It is attacker's goal: DoS of example.com.
 
   This patch for unbound adds a new blocking mode "bloomfilter".
-It learns QNAMEs which resulted in NOERROR using bloomfilter at all time.
-If you have set a domain to bloomfilter and Unbound receives queries
-for this domain, it accepts only QNAMEs that matches to bloomfilter -- 
-i.e. query result was NOERROR in past.
+It learns QNAMEs which resulted in NOERROR using bloomfilter in peace time.
+When you have set a domain to bloomfilter and Unbound receives queries
+for that domain, it accepts only QNAMEs that matches to bloomfilter
+(i.e. query result WAS NOERROR in past).
 
 So it will effectively refuses only bad random queries
 (bad query will result cache miss and NXDOMAIN).
@@ -42,17 +42,17 @@ So it will effectively refuses only bad random queries
 
 Specify domain(s) to protect by:
 
-    $ unbound-control local_zone victim.com bloomfilter
+    $ unbound-control local_zone example.com bloomfilter
   
-victim.com is a domain which is under random subdomain attack.
+example.com is a domain which is under random subdomain attack.
   
 # Automatic detection of domains under attack
 
-Add this option to unbound.conf:
+this option in unbound.conf:
 
     bloomfilter-threshold
 
-automatically applies bloomfilter to zones whose number of long-lived (> 1500 milliseconds) query
+automatically applies bloomfilter to domains whose number of long-lived (> 1500 milliseconds) query
 in requestlist exceeds `bloomfilter-threshold`.
   
 ## `unbound.conf` example
