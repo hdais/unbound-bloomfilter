@@ -527,7 +527,7 @@ int rtypecmp(const void *p, const void *q) {
 int allowed_qtype_qclass(struct query_info *q) {
 
   if(q->qclass == 1 &&
-     bsearch(&q->qtype, validrtype, sizeof(validrtype),
+     bsearch(&q->qtype, validrtype, sizeof(validrtype)/sizeof(validrtype[0]),
 	     sizeof(validrtype[0]), rtypecmp)) {
     return 1;
   }
