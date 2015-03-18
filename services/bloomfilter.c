@@ -651,6 +651,8 @@ void domainlist_destroy(struct domain **d, size_t bucketsize) {
   unsigned int i;
   struct domain *p;
 
+  if(!d)return;
+
   for(i=0;i<bucketsize;i++) {
     while(d[i]) {
       p = d[i]->next;
@@ -658,6 +660,7 @@ void domainlist_destroy(struct domain **d, size_t bucketsize) {
       d[i] = p;
     }
   }
+  free(d);
 
 }
 
