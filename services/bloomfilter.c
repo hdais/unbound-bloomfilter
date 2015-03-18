@@ -395,6 +395,7 @@ void bf_destroy(struct bloomfilter *bf) {
     if(bf->field[0]) free(bf->field[0]);
     if(bf->lastupdate[0]) free(bf->lastupdate[0]);
     if(bf->psl) psl_destroy(bf->psl);
+    if(bf->blocklist)bf_blocklist_destroy(bf->blocklist);
     lock_quick_destroy(&bf->lock);
   }
   free(bf);
