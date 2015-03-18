@@ -49,8 +49,6 @@ struct bloomfilter {
 
   lock_quick_t lock;
 
-  struct bf_blocklist *blocklist;
-
   int on;
   int threshold;
 };
