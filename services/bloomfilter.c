@@ -339,6 +339,7 @@ struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
   bf->threshold = threshold;
   bf->size = size;
   bf->k = k;
+  bf->blocklist = NULL;
   lock_quick_init(&bf->lock);
 
   bf->psl = psl_create(65536);
