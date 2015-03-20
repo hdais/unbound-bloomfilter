@@ -65,7 +65,9 @@ It sums up number of long-lived (elapsed time > 1.5) qnames per domain. Public s
     example1.com    3
     example2.co.uk  1
 
-And it bloomfilters the domains whose `num_of_longlived_queries` exceeds `bloomfilter-threshold`. If a domain has been already bloomfiltered and its `num_of_longlived_queries` exceeds `bloomfilter-threshold * 2` (bloomfilter is not effective for any reason) ALL queries for the domain is refused.
+And it bloomfilters the domains whose `num_of_longlived_queries` exceeds `bloomfilter-threshold`.
+
+If a domain has been already bloomfiltered and its `num_of_longlived_queries` exceeds `bloomfilter-threshold * 2` (bloomfilter is not effective for any reason) ALL queries for the domain is refused.
 
 ### `unbound.conf` example
      server:
