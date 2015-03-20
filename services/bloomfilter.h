@@ -13,6 +13,8 @@
 
 #define BF_BLOCKLIST_UPDATE_INTERVAL 10
 
+#define SIPHASH_KEYSIZE 16
+
 struct psrule {
   uint8_t *name;
   size_t namelen;
@@ -90,7 +92,7 @@ int bloomfilter_check(struct bloomfilter *, struct query_info* qinfo,
 
 void log_requestlist(struct mesh_area*);
 
-struct bf_blocklist *bf_blocklist_create(size_t);
+struct bf_blocklist *bf_blocklist_create(size_t, struct ub_randstate *);
 void bf_blocklist_destroy(struct bf_blocklist *);
 int bf_blocked_domain(struct mesh_area*, struct query_info* );
 void domainlist_destroy(struct domain**, size_t);

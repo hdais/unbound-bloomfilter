@@ -1281,7 +1281,8 @@ worker_init(struct worker* worker, struct config_file *cfg,
 		worker_delete(worker);
 		return 0;
 	}
-	if(!(worker->bf_blocklist = bf_blocklist_create(8192))) {
+	if(!(worker->bf_blocklist
+		 = bf_blocklist_create(8192, worker->rndstate))) {
 		log_err("Could not create bf_blocklist");
 		worker_delete(worker);
 		return 0;

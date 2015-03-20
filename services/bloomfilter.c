@@ -347,12 +347,12 @@ struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
     return NULL;
   }
 
-  bf->key = malloc(16);
+  bf->key = malloc(k * SIPHASH_KEYSIZE);
   if(!bf->key) {
     bf_destroy(bf);
     return NULL;
   }
-  for(i=0;i<16;i++) {
+  for(i=0;i<k*SIPHASH_KEYSIZE;i++) {
     bf->key[i] = ub_random_max(rnd, 256);
   }
 
@@ -402,11 +402,7 @@ void bf_destroy(struct bloomfilter *bf) {
 
 uint64_t bf_hash(struct bloomfilter *bf, int k,
 		 uint8_t *name, size_t namelen) {
-  char key[16];
-  memcpy(key, bf->key, 16);
-  key[0] ^= k & 0xff;
-  key[1] ^= (k >> 8) & 0xff;
-  return siphash24(name, namelen, key);
+  return siphash24(name, namelen, bf->key+(k*SIPHASH_KEYSIZE));
 }
 
 void bf_set(struct bloomfilter *bf, uint8_t *name,
@@ -475,18 +471,12 @@ int bf_check(struct bloomfilter *bf, uint8_t *name, size_t namelen,
   match[0] = match[1] = 1;
 
   for(i = 0; i < bf->k; i++) {
+    if(!match[0] && !match[1])break;
     h = bf_hash(bf, i, lname, namelen) % ((uint64_t)bf->size << 3);
     byteindex = h >> 3;
     luindex = byteindex / BF_BLOCKSIZE;
 
     for(index = 0; index < 2; index++) {
-	/*
-	if(bf->timebase[index] == 0 ||
-		bf->lastupdate[index][luindex] < bf->timebase[index] ) {
-		match[index] = 0;
-	}
-	match[index] &=((bf->field[index][byteindex] & ( 1 << ( h & 0x7)))?0:1);
-	*/
       if(match[index] == 0) continue;
 
       lock_quick_lock(&bf->lock);
@@ -508,7 +498,7 @@ int bf_check(struct bloomfilter *bf, uint8_t *name, size_t namelen,
   }
   
   free(lname);
-  return match[0] | match[1];
+  return match[0] || match[1];
 }
 
 void bloomfilter_learn(struct bloomfilter *bf, uint8_t *name, size_t namelen,
@@ -556,7 +546,8 @@ void bf_blocklist_destroy(struct bf_blocklist *bl) {
   log_info("bf_blocklist deleted");
 }
 
-struct bf_blocklist *bf_blocklist_create(size_t bucketsize) {
+struct bf_blocklist *bf_blocklist_create(size_t bucketsize,
+					 struct ub_randstate *rnd) {
 
   struct bf_blocklist *bl;
   unsigned int i;
@@ -568,13 +559,13 @@ struct bf_blocklist *bf_blocklist_create(size_t bucketsize) {
   bl->bucketsize = bucketsize;
   bl->lastupdate = 0;
 
-  bl->key = malloc(16);
+  bl->key = malloc(SIPHASH_KEYSIZE);
   if(!bl->key) {
     bf_blocklist_destroy(bl);
     return NULL;
   }
-  for(i=0;i<16;i++) {
-    bl->key[i] = 0;
+  for(i=0;i<SIPHASH_KEYSIZE;i++) {
+    bl->key[i] = ub_random_max(rnd, 256);
   }
 
   bl->bd = malloc(bucketsize * sizeof(struct domain *));
