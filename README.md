@@ -1,6 +1,6 @@
   This patch implements a mitigation of random subdomain attack against DNS resolver using Bloomfilter.
 
-  When DNS resolver operators suffer from random subdomain attack they often block all queries for target domain (e.g. `example.com`) at their resolvers. It mitigates the attack effectively but the resolver no longer resolves `example.com` -- It is attacker's goal: DoS of `example.com`.
+  When DNS resolver operators suffer from random subdomain attack they often block all queries for target domain at their resolvers. It mitigates the attack effectively but the resolver no longer resolves that domainname -- It is attacker's goal: that domain name's DoS. 
 
   This patch for unbound implements a new blocking mode `bloomfilter`. It learns QNAMEs which resulted in NOERROR (existing domain name) using Bloomfilter in peace time. When a domain is set to be bloomfiltered (manually or automatically) and Unbound receives queries for that domain, it accepts only QNAMEs that matches to Bloomfilter (the query result was NOERROR in past). So it can effectively refuse only bad random queries which will be NXDOMAIN.
 
