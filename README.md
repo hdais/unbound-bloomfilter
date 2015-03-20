@@ -29,7 +29,7 @@ Note that actually two (2) Bloomfilter bitfields are allocated. So if you specif
 
 # To Protect Unbound from Damage Caused by Random Subdomain Attack
 
-## manually
+## Specfying bloomfiltered domain manually
 
 Specify domain(s) to protect by:
 
@@ -37,7 +37,7 @@ Specify domain(s) to protect by:
   
 `example.com` is the domain under random subdomain attack.
   
-## Automatic Detection of Domains under Attack
+## Automatic detection of domains under Attack
 
 this option in unbound.conf:
 
@@ -45,7 +45,7 @@ this option in unbound.conf:
 
 automatically applies bloomfilter to domains whose number of long-lived (> 1500 milliseconds) query in requestlist exceeds `bloomfilter-threshold`.
 
-## How Domain under attack is detected
+### The detection algorithm
 
 The detection algorithm periodically scans requestlist. For example these query is in requestlist:
 
@@ -67,7 +67,7 @@ It sums up number of long-lived qnames per domain. Public suffix list is used to
 
 And it bloomfilters the domains whose `num_of_longlived_queries` exceeds `bloomfilter-threshold`. If a domain was already bloomfiltered and its `num_of_longlived_queries` exceeds `bloomfilter-threshold * 2` (bloomfilter is not effective for any reason) it refuses ALL queries for the domain.
 
-## `unbound.conf` example
+### `unbound.conf` example
      server:
       bloomfilter-size: 1024m
       bloomfilter-interval: 86400
