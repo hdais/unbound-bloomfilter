@@ -70,6 +70,7 @@ struct bf_blocklist {
   char *key; /* 16 bytes long */
   size_t bucketsize;
   struct domain **bd;
+  struct timeval lifetime_threshold;
   time_t lastupdate;
 };
 

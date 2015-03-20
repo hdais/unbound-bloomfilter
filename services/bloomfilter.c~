@@ -558,8 +558,8 @@ struct bf_blocklist *bf_blocklist_create(size_t bucketsize,
   bl->bd = NULL;
   bl->bucketsize = bucketsize;
   bl->lastupdate = 0;
-  bl->lifetime_threshold.tv_sec = 2;
-  bl->lifetime_threshold.tv_usec = 0;
+  bl->lifetime_threshold.tv_sec = 1;
+  bl->lifetime_threshold.tv_usec = 500000;
 
   bl->key = malloc(SIPHASH_KEYSIZE);
   if(!bl->key) {
@@ -707,7 +707,7 @@ timeval_subtract(struct timeval* d, const struct timeval* end,
   d->tv_sec = end->tv_sec - start->tv_sec;
   if(end_usec < start->tv_usec) {
     end_usec += 1000000;
-    d->tv_sec--;
+                d->tv_sec--;
   }
   d->tv_usec = end_usec - start->tv_usec;
 #endif
@@ -753,7 +753,7 @@ void log_requestlist(struct mesh_area* mesh) {
 	r = r->next;
       }
 #ifndef S_SPLINT_S
-      timeval_subtract(&dt, mesh->env->now_tv,  &r->start_time);
+      timeval_subtract(&dt, &r->start_time, mesh->env->now_tv);
       if (timeval_smaller(&blocklist->lifetime_threshold, &dt)) {
 	qname_len = m->s.qinfo.qname_len;
 	qname = malloc(qname_len);
