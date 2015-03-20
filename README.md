@@ -47,7 +47,7 @@ automatically applies bloomfilter to domains whose number of long-lived (> 1.5 s
 
 ### The detection algorithm
 
-The detection algorithm periodically scans requestlist. Suppose that these client queries is in requestlist:
+The detection algorithm periodically scans requestlist. Suppose that these client queries are in requestlist:
 
     QNAME                     elapsed time (in secs)
     ------------------------------------------------------
