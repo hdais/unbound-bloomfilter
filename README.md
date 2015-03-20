@@ -44,7 +44,7 @@ Specify domain(s) to protect by:
 
     $ unbound-control local_zone example.com bloomfilter
   
-example.com is a domain which is under random subdomain attack.
+`example.com` is a domain which is under random subdomain attack.
   
 # Automatic detection of domains under attack
 
