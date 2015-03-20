@@ -33,7 +33,7 @@ Specify domain(s) to protect by:
 
     $ unbound-control local_zone example.com bloomfilter
   
-`example.com` is a domain which is under random subdomain attack.
+`example.com` is the domain under random subdomain attack.
   
 # Automatic detection of domains under attack
 
@@ -42,6 +42,29 @@ this option in unbound.conf:
     bloomfilter-threshold
 
 automatically applies bloomfilter to domains whose number of long-lived (> 1500 milliseconds) query in requestlist exceeds `bloomfilter-threshold`.
+
+## How attacked domain is detected
+
+The detection algorithm periodically scans requestlist. For example these query is in requestlist:
+
+    QNAME                     elapsed time (in secs)
+    ------------------------------------------------------
+    qvsfwf.www.example1.com   0.3
+    wrrt4f.www.example2.com   4.5
+    twgett.www.example1.com   2.1
+    jqfajr.www.example1.com   2.1
+    www.example2.co.uk        2.1
+    www.example3.info         1.6
+
+It sums up number of long-lived qnames per domain. Public suffix list is used to classify "domain".
+
+    domain          num_of_longlived_queries
+    -----------------------------
+    example1.com    3
+    example2.co.uk  1
+    example3.info   1
+
+And it bloomfilters the domains whose `num_of_longlived_queries` exceeds `bloomfilter-threshold`.
   
 ## `unbound.conf` example
      server:
