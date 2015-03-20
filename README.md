@@ -43,7 +43,7 @@ This option in unbound.conf:
 
     bloomfilter-threshold
 
-automatically applies bloomfilter to domains whose number of long-lived (> 1.5 seconds) query in requestlist exceeds `bloomfilter-threshold`.
+automatically applies bloomfilter to domains whose number of long-lived (> 2.0 seconds) query in requestlist exceeds `bloomfilter-threshold`.
 
 ### The detection algorithm
 
@@ -58,7 +58,7 @@ The detection algorithm periodically scans requestlist. Suppose that these clien
     www.example2.co.uk        2.1
     www.example3.info         1.2
 
-It sums up number of long-lived (elapsed time > 1.5) qnames per domain. Public suffix list is used to classify domains.
+It sums up number of long-lived (elapsed time > 2.0) qnames per domain. Public suffix list is used to classify domains.
 
     domain          num_of_longlived_queries
     -----------------------------
