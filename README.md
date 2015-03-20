@@ -27,7 +27,7 @@ Note that actually two (2) Bloomfilter bitfields are allocated. So if you specif
       bloomfilter-interval: 86400
 
 
-# To Protect unbound from damage caused by random subdomain attack
+# To Protect unbound from damage caused by random subdomain attack (manually)
 
 Specify domain(s) to protect by:
 
@@ -43,7 +43,7 @@ this option in unbound.conf:
 
 automatically applies bloomfilter to domains whose number of long-lived (> 1500 milliseconds) query in requestlist exceeds `bloomfilter-threshold`.
 
-## How attacked domain is detected
+## How domain under attack is detected
 
 The detection algorithm periodically scans requestlist. For example these query is in requestlist:
 
