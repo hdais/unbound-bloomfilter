@@ -4,7 +4,7 @@
 
   This patch for unbound implements a new blocking mode `bloomfilter`. It learns QNAMEs which resulted in NOERROR (existing domain name) using Bloomfilter in peace time. When a domain is set to be bloomfiltered (manually or automatically) and Unbound receives queries for that domain, it accepts only QNAMEs that matches to Bloomfilter (the query result was NOERROR in past). So it can effectively refuse only bad random queries which will be NXDOMAIN.
 
-# To Enabling Bloomfilter Learning
+# To Enable Bloomfilter Learning
 
   set these options in unbound.conf:
 
