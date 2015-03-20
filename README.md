@@ -50,7 +50,7 @@ The detection algorithm periodically scans requestlist. For example these query 
     QNAME                     elapsed time (in secs)
     ------------------------------------------------------
     qvsfwf.www.example1.com   0.3
-    wrrt4f.www.example2.com   4.5
+    wrrt4f.www.example1.com   4.5
     twgett.www.example1.com   2.1
     jqfajr.www.example1.com   2.1
     www.example2.co.uk        2.1
