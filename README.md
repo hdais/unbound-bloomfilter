@@ -4,7 +4,7 @@
 
   This patch for unbound adds a new blocking mode `bloomfilter`. It learns QNAMEs which resulted in NOERROR (existing QNAMEs) using Bloomfilter in peace time. When you have set a domain to bloomfilter and Unbound receives queries for that domain, it accepts only QNAMEs that matches to Bloomfilter (whose result was NOERROR in past). So it can effectively refuse only bad random queries which will be NXDOMAIN.
 
-# Enabling bloomfilter learning
+# To Enabling Bloomfilter Learning
 
   set these options in unbound.conf:
 
@@ -27,7 +27,9 @@ Note that actually two (2) Bloomfilter bitfields are allocated. So if you specif
       bloomfilter-interval: 86400
 
 
-# To Protect unbound from damage caused by random subdomain attack (manually)
+# To Protect Unbound from Damage Caused by Random Subdomain Attack
+
+## manually
 
 Specify domain(s) to protect by:
 
@@ -35,7 +37,7 @@ Specify domain(s) to protect by:
   
 `example.com` is the domain under random subdomain attack.
   
-# Automatic detection of domains under attack
+## Automatic Detection of Domains under Attack
 
 this option in unbound.conf:
 
@@ -43,7 +45,7 @@ this option in unbound.conf:
 
 automatically applies bloomfilter to domains whose number of long-lived (> 1500 milliseconds) query in requestlist exceeds `bloomfilter-threshold`.
 
-## How domain under attack is detected
+## How Domain under attack is detected
 
 The detection algorithm periodically scans requestlist. For example these query is in requestlist:
 
