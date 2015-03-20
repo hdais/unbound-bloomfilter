@@ -63,7 +63,7 @@ It sums up number of long-lived qnames per domain. Public suffix list is used to
     example1.com    3
     example2.co.uk  1
 
-And it bloomfilters the domains whose `num_of_longlived_queries` exceeds `bloomfilter-threshold`. If a domain was already bloomfiltered and `num_of_longlived_queries` exceeds `bloomfilter-threshold * 2` (i.e. bloomfilter is not effective for any reason) it refuses ALL queries for the domain.
+And it bloomfilters the domains whose `num_of_longlived_queries` exceeds `bloomfilter-threshold`. If a domain was already bloomfiltered and its `num_of_longlived_queries` exceeds `bloomfilter-threshold * 2` (bloomfilter is not effective for any reason) it refuses ALL queries for the domain.
 
 ## `unbound.conf` example
      server:
