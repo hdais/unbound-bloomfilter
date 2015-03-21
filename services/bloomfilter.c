@@ -537,8 +537,6 @@ int bloomfilter_check(struct bloomfilter *bf, struct query_info* qinfo,
 }
 
 void bf_blocklist_destroy(struct bf_blocklist *bl) {
-  unsigned int i;
-  struct domain *p, *q;
   if(!bl) return;
   if(bl->key) free(bl->key);
   if(bl->bd) domainlist_destroy(bl->bd, bl->bucketsize); 
@@ -719,15 +717,16 @@ void log_requestlist(struct mesh_area* mesh) {
   size_t qname_len, suffix_len;
   struct psl *psl;
   struct mesh_state *m;
-  unsigned int i, j, bucketsize, allcount;
+  unsigned int i, j, bucketsize;
   time_t now;
   struct timeval dt;
-
   struct domain *p, *q, **domainlist;
   struct bf_blocklist *blocklist;
   struct bloomfilter *bloomfilter;
+  struct ub_randstate *rnd;
 
   if(!mesh) return;
+  rnd = mesh->env->worker->rndstate;
   now = mesh->env->now_tv->tv_sec;
   blocklist = mesh->env->worker->bf_blocklist;
   bloomfilter = mesh->env->worker->daemon->bloomfilter;
@@ -745,7 +744,6 @@ void log_requestlist(struct mesh_area* mesh) {
   if(!domainlist) return;
   for(i=0;i<bucketsize;i++) domainlist[i] = NULL;
 
-  allcount = 0;
   RBTREE_FOR(m, struct mesh_state*, &mesh->all) {
     if(m->reply_list) {
       struct mesh_reply *r = m->reply_list;
@@ -793,7 +791,6 @@ void log_requestlist(struct mesh_area* mesh) {
     }
   }
 
-  int c = 0;
   for(i=0; i<blocklist->bucketsize; i++) {
     struct domain *s = NULL;
     p = blocklist->bd[i];
@@ -802,38 +799,43 @@ void log_requestlist(struct mesh_area* mesh) {
       q = domain_search(domainlist, bucketsize, key, p->name, p->namelen, 0);
       if(!q) p->count = 0;
 
-      if((p->state == 0 && p->count < bloomfilter->threshold)
-	 || now - p->laststatechanged > 90 + ub_random_max(mesh->env->worker->rndstate, 180)) {
+      if(now - p->laststatechanged > 90 + ub_random_max(rnd, 180)) {
 	if(p->state != 0) {
 	  dname_str(p->name, buf);
-	  log_info("reqlist protection: deleted filtered domain: %s", buf);
+	  log_info("deleted filtered domain: %s", buf);
 	}
-	if(s) {
-	  s->next = p->next;
-	} else {
-	  blocklist->bd[i] = p->next;
-	}
+	/* delete p */
+	if(s) s->next=p->next; else blocklist->bd[i] = p->next;
 	q = p->next;
 	domain_destroy(p);
 	p = q;
-      } else {
-	if(p->state == 0 && p->count >= bloomfilter->threshold) {
+	continue;
+      }
+
+      if(p->state == 0) {
+	if(p->count < bloomfilter->threshold) {
+	  /* delete p */
+	  if(s) s->next=p->next; else blocklist->bd[i] = p->next;
+	  q = p->next;
+	  domain_destroy(p);
+	  p = q;
+	  continue;
+	} else {
 	  dname_str(p->name, buf);
-	  log_info("reqlist protection: added bloomfiltered domain: %s numreq=%zu", buf, p->count);
+	  log_info("added bloomfiltered domain: %s numreq=%zu", buf, p->count);
 	  p->state = 1;
 	  p->laststatechanged = now;
 	}
-	if(p->state == 1 && p->count >= bloomfilter->threshold * 2
-		 && now - p->laststatechanged > 60) {
-	  dname_str(p->name, buf);
-	  log_info("reqlist protection: added all-filtered domain: %s numreq=%zu", buf, p->count);
+      } else if(p->state == 1) {
+	if(p->count >= bloomfilter->threshold * 2
+	   && now - p->laststatechanged > 60) {
+	  log_info("added all-filtered domain: %s numreq=%zu", buf, p->count);
 	  p->state = 2;
 	  p->laststatechanged = now;
 	}
-	s = p;
-	p = p -> next;
       }
-
+      s = p;
+      p = p->next;
     }
   }
   domainlist_destroy(domainlist, bucketsize);

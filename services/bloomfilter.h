@@ -11,7 +11,7 @@
 
 #define BF_BLOCKSIZE 64
 
-#define BF_BLOCKLIST_UPDATE_INTERVAL 10
+#define BF_BLOCKLIST_UPDATE_INTERVAL 5
 
 #define SIPHASH_KEYSIZE 16
 
@@ -52,7 +52,7 @@ struct bloomfilter {
   lock_quick_t lock;
 
   int on;
-  int threshold;
+  size_t threshold;
 };
 
 
