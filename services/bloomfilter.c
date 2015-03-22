@@ -828,7 +828,7 @@ void log_requestlist(struct mesh_area* mesh) {
 	}
       } else if(p->state == 1) {
 	if(p->count >= bloomfilter->threshold * 2
-	   && now - p->laststatechanged > 60) {
+	   && now - p->laststatechanged > 120) {
 	  log_info("added all-filtered domain: %s numreq=%zu", buf, p->count);
 	  p->state = 2;
 	  p->laststatechanged = now;
