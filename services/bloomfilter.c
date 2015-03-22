@@ -799,7 +799,7 @@ void log_requestlist(struct mesh_area* mesh) {
       q = domain_search(domainlist, bucketsize, key, p->name, p->namelen, 0);
       if(!q) p->count = 0;
 
-      if(now - p->laststatechanged > 90 + ub_random_max(rnd, 180)) {
+      if(now - p->laststatechanged > 900 + ub_random_max(rnd, 180)) {
 	if(p->state != 0) {
 	  dname_str(p->name, buf);
 	  log_info("deleted filtered domain: %s", buf);
