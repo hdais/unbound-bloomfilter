@@ -901,7 +901,7 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 		goto send_reply;
 	}
 	if(local_zones_answer(worker->daemon->local_zones, &qinfo, &edns, 
-		c->buffer, worker->scratchpad, &bloomfilter)) {
+		c->buffer, worker->scratchpad, repinfo, &bloomfilter)) {
 		regional_free_all(worker->scratchpad);
 		if(sldns_buffer_limit(c->buffer) == 0) {
 			comm_point_drop_reply(repinfo);
@@ -910,18 +910,18 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 		server_stats_insrcode(&worker->stats, c->buffer);
 		goto send_reply;
 	}
-	if(bloomfilter && !bloomfilter_check(worker->daemon->bloomfilter, &qinfo, *worker->env.now)) {
+	if(bloomfilter && !bloomfilter_check(worker->daemon->bloomfilter,
+		&qinfo, *worker->env.now)) {
 		sldns_buffer_set_limit(c->buffer, LDNS_HEADER_SIZE);
-                sldns_buffer_write_at(c->buffer, 4,
-                        (uint8_t*)"\0\0\0\0\0\0\0\0", 8);
-                LDNS_QR_SET(sldns_buffer_begin(c->buffer));
-                LDNS_RCODE_SET(sldns_buffer_begin(c->buffer),
-                        LDNS_RCODE_REFUSED);
-                sldns_buffer_flip(c->buffer);
-                server_stats_insrcode(&worker->stats, c->buffer);
-                goto send_reply;
+		sldns_buffer_write_at(c->buffer, 4,
+			(uint8_t*)"\0\0\0\0\0\0\0\0", 8);
+		LDNS_QR_SET(sldns_buffer_begin(c->buffer));
+		LDNS_RCODE_SET(sldns_buffer_begin(c->buffer),
+			LDNS_RCODE_REFUSED);
+		sldns_buffer_flip(c->buffer);
+		server_stats_insrcode(&worker->stats, c->buffer);
+		goto send_reply;
 	}
-
 	/* We've looked in our local zones. If the answer isn't there, we
 	 * might need to bail out based on ACLs now. */
 	if((ret=deny_refuse_non_local(c, acl, worker, repinfo)) != -1)
@@ -1281,13 +1281,12 @@ worker_init(struct worker* worker, struct config_file *cfg,
 		worker_delete(worker);
 		return 0;
 	}
-	if(!(worker->bf_blocklist
-		 = bf_blocklist_create(256, worker->rndstate))) {
+	if(!(worker->bf_blocklist =
+		bf_blocklist_create(256, worker->rndstate))) {
 		log_err("Could not create bf_blocklist");
 		worker_delete(worker);
 		return 0;
 	}
-
 	worker_mem_report(worker, NULL);
 	/* if statistics enabled start timer */
 	if(worker->env.cfg->stat_interval > 0) {

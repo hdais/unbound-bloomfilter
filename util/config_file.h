@@ -119,6 +119,8 @@ struct config_file {
 	size_t infra_cache_slabs;
 	/** max number of hosts in the infra cache */
 	size_t infra_cache_numhosts;
+	/** min value for infra cache rtt */
+	int infra_cache_min_rtt;
 	/** delay close of udp-timeouted ports, if 0 no delayclose. in msec */
 	int delay_close;
 
@@ -282,6 +284,8 @@ struct config_file {
 	struct config_strlist* control_ifs;
 	/** port number for the control port */
 	int control_port;
+	/** use certificates for remote control */
+	int remote_control_use_cert;
 	/** private key file for server */
 	char* server_key_file;
 	/** certificate file for server */
@@ -337,7 +341,6 @@ struct config_file {
 	int dnstap_log_forwarder_query_messages;
 	/** true to log dnstap FORWARDER_RESPONSE message events */
 	int dnstap_log_forwarder_response_messages;
-
 	/** bloomfilter memory size */
 	size_t bloomfilter_size;
 	/** bloomfilter interval */
@@ -345,6 +348,11 @@ struct config_file {
 	/** bloomfilter threshold */
 	int bloomfilter_threshold;
 };
+
+/** from cfg username, after daemonise setup performed */
+extern uid_t cfg_uid;
+/** from cfg username, after daemonise setup performed */
+extern gid_t cfg_gid;
 
 /**
  * Stub config options
@@ -428,6 +436,12 @@ void config_delete(struct config_file* config);
  * @param config: to apply. Side effect: global constants change.
  */
 void config_apply(struct config_file* config);
+
+/**
+ * Find username, sets cfg_uid and cfg_gid.
+ * @param config: the config structure.
+ */
+void config_lookup_uid(struct config_file* config);
 
 /**
  * Set the given keyword to the given value.

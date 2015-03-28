@@ -282,9 +282,9 @@ int mesh_make_new_space(struct mesh_area* mesh, sldns_buffer* qbuf)
 }
 
 void mesh_new_client(struct mesh_area* mesh, struct query_info* qinfo,
-        uint16_t qflags, struct edns_data* edns, struct comm_reply* rep,
-		     uint16_t qid)
-	{
+	uint16_t qflags, struct edns_data* edns, struct comm_reply* rep,
+	uint16_t qid)
+{
 	log_requestlist(mesh);
 
 	if(qinfo && rep) {
