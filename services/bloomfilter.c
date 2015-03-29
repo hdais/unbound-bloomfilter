@@ -312,6 +312,24 @@ uint8_t *psl_registrabledomain(struct psl *psl, uint8_t *name, size_t namelen,
   return NULL;
 }
 
+uint64_t *validrtype_create(void) {
+  uint64_t *r;
+  uint16_t t;
+  unsigned int i, bindex;
+  r = calloc(65536 / 64, sizeof(uint64_t));
+  if(!r)return NULL;
+  for(i=0;i<sizeof(validrtype)/sizeof(validrtype[0]);i++) {
+    t = validrtype[i];
+    bindex = t / 64;
+    r[bindex] |= (1ULL << ( t % 64));
+  }
+  return r;
+}
+
+void validrtype_destroy(uint64_t *r) {
+  free(r);
+}
+
 struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
 			      time_t now, int interval, int threshold) {
 
@@ -336,6 +354,7 @@ struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
   bf->field[0] = NULL;
   bf->lastupdate[0] = NULL;
   bf->psl = NULL;
+  bf->validrtype = NULL;
   bf->threshold = threshold;
   bf->size = size;
   bf->k = k;
@@ -343,6 +362,12 @@ struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
 
   bf->psl = psl_create(65536);
   if(!bf->psl) {
+    bf_destroy(bf);
+    return NULL;
+  }
+
+  bf->validrtype = validrtype_create();
+  if(!bf->validrtype) {
     bf_destroy(bf);
     return NULL;
   }
@@ -395,6 +420,7 @@ void bf_destroy(struct bloomfilter *bf) {
     if(bf->field[0]) free(bf->field[0]);
     if(bf->lastupdate[0]) free(bf->lastupdate[0]);
     if(bf->psl) psl_destroy(bf->psl);
+    if(bf->validrtype) validrtype_destroy(bf->validrtype);
     lock_quick_destroy(&bf->lock);
   }
   free(bf);
@@ -510,20 +536,15 @@ void bloomfilter_learn(struct bloomfilter *bf, uint8_t *name, size_t namelen,
 }
 
 
-int rtypecmp(const void *p, const void *q) {
-  return *((uint16_t *)p) - *((uint16_t *)q);
-}
-
-int allowed_qtype_qclass(struct query_info *q) {
-
-  if(q->qclass == 1 &&
-     bsearch(&q->qtype, validrtype, sizeof(validrtype)/sizeof(validrtype[0]),
-	     sizeof(validrtype[0]), rtypecmp)) {
+int allowed_qtype_qclass(struct bloomfilter *bf, struct query_info *q) {
+  int bindex;
+  if(q->qclass != 1)return 0;
+  bindex = q->qtype / 64;
+  if((bf->validrtype[bindex] & (1ULL << (q->qtype % 64))) != 0) {
     return 1;
   }
 
   return 0;
-
 }
 
 int bloomfilter_check(struct bloomfilter *bf, struct query_info* qinfo,
@@ -531,7 +552,7 @@ int bloomfilter_check(struct bloomfilter *bf, struct query_info* qinfo,
 {
   if(bf->on) {
      return bf_check(bf, qinfo->qname, qinfo->qname_len, now)
-       && allowed_qtype_qclass(qinfo);
+       && allowed_qtype_qclass(bf, qinfo);
   }
   return 1;
 }
@@ -717,7 +738,7 @@ void log_requestlist(struct mesh_area* mesh) {
   size_t qname_len, suffix_len;
   struct psl *psl;
   struct mesh_state *m;
-  unsigned int i, j, bucketsize;
+  unsigned int i, bucketsize;
   time_t now;
   struct timeval dt;
   struct domain *p, *q, **domainlist;

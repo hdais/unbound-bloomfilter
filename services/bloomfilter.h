@@ -53,6 +53,7 @@ struct bloomfilter {
 
   int on;
   size_t threshold;
+  uint64_t *validrtype;
 };
 
 
