@@ -932,9 +932,13 @@ void mesh_query_done(struct mesh_state* mstate)
 	struct mesh_cb* c;
 	struct reply_info* rep = (mstate->s.return_msg?
 		mstate->s.return_msg->rep:NULL);
-	/* learn result of user query only */
-	if(mstate->reply_list && rep && ((rep->flags & 0xf) == 0))  {
-		bloomfilter_learn(mstate->s.env->worker->daemon->bloomfilter, mstate->s.qinfo.qname, mstate->s.qinfo.qname_len, *(mstate->s.env->now));
+	/* learn qnames that result was NOERROR and origin is not cache */
+	if(rep && ((rep->flags & 0xf) == 0) && mstate->s.reply_origin)  {
+		bloomfilter_learn(
+			mstate->s.env->worker->daemon->bloomfilter,
+			mstate->s.qinfo.qname,
+			mstate->s.qinfo.qname_len,
+			*(mstate->s.env->now));
 	}
 	for(r = mstate->reply_list; r; r = r->next) {
 		mesh_send_reply(mstate, mstate->s.return_rcode, rep, r, prev);
