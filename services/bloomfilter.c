@@ -219,13 +219,48 @@ struct psrule *psl_insert(struct psl *psl, char *rule) {
   return newrule;
 }
 
+/*
+ * "registrable domain" for reverse domain 
+ *
+ * 1.0.2.192.in-addr.arpa -> 2.192.in-addr.arpa
+ * 0.1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.ip6.arpa. -> 8.9.a.b.c.d.e.f.ip6.arpa.
+ */
+uint8_t *psl_registrabledomain_arpa(uint8_t *name, size_t namelen,
+				    size_t namelabs, size_t *suffixlen) {
+
+  uint8_t *ip4 = (uint8_t*)"\007in-addr\004arpa\000";
+  size_t  ip4_labs = 3;
+  uint8_t *ip6 = (uint8_t*)"\003ip6\004arpa\000";
+  size_t  ip6_labs = 3;
+  size_t trunc = 0;
+
+  if(dname_subdomain_c(name, ip4)) {
+    trunc = 5; /* xxx.xxx.in-addr.arpa */
+  } else if (dname_subdomain_c(name, ip6)) {
+    trunc = 11; /* x.x.x.x.x.x.x.x.in-addr.arpa */
+  }
+
+  if(trunc == 0 || trunc > namelabs) return NULL;
+
+  while(trunc < namelabs) {
+    dname_remove_label(&name, &namelen);
+    namelabs --;
+  }
+  *suffixlen = namelen;
+
+  return name;
+}
+
 uint8_t *psl_registrabledomain(struct psl *psl, uint8_t *name, size_t namelen,
 			 size_t *suffixlen) {
 
   unsigned int namelabs = dname_count_labels(name);
-  uint8_t *b_name, *prev_name, *prev_prev_name, *match_name;
+  uint8_t *arpa, *b_name, *prev_name, *prev_prev_name, *match_name;
   int b_namelen, b_namelabs, prev_namelen, prev_prev_namelen, match_namelen;
   struct psrule *psr;
+
+  arpa = psl_registrabledomain_arpa(name, namelen, namelabs, suffixlen);
+  if(arpa) return arpa;
 
   while(namelabs > psl->max_namelabs + 2) {
     dname_remove_label(&name, &namelen);
