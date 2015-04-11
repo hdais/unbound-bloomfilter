@@ -567,7 +567,7 @@ void bloomfilter_learn(struct bloomfilter *bf, uint8_t *name, size_t namelen,
 {
   if(bf->on) {
      bf_set(bf, name, namelen, now);
-  };
+  }
 }
 
 
