@@ -54,6 +54,7 @@ struct bloomfilter {
   int on;
   size_t threshold;
   uint64_t *validrtype;
+  size_t ratelimit;
 };
 
 
@@ -76,6 +77,19 @@ struct bf_blocklist {
 };
 
 
+struct rlcount {
+  uint64_t count;
+  struct timeval lastupdate;
+};
+
+struct bf_rlbucket {
+  char *key[2];
+  size_t bucketsize;
+  struct rlcount *bucket[2];
+};
+
+
+
 struct psl *psl_create(size_t);
 void psl_destroy(struct psl *);
 struct psrule *psl_insert(struct psl *, char *);
@@ -84,7 +98,7 @@ uint8_t *psl_registrabledomain(struct psl *, uint8_t *,
 
 void bf_destroy(struct bloomfilter *);
 struct bloomfilter *bf_create(size_t, size_t, struct ub_randstate *,
-                              time_t, int, int);
+                              time_t, int, int, int);
 
 void bloomfilter_learn(struct bloomfilter *, uint8_t *, size_t,
                         time_t);
@@ -98,5 +112,8 @@ struct bf_blocklist *bf_blocklist_create(size_t, struct ub_randstate *);
 void bf_blocklist_destroy(struct bf_blocklist *);
 int bf_blocked_domain(struct mesh_area*, struct query_info* );
 void domainlist_destroy(struct domain**, size_t);
+int bf_ratelimit(struct mesh_area* ,struct query_info* );
+struct bf_rlbucket *bf_rlbucket_create(size_t, struct ub_randstate *);
+void bf_rlbucket_destroy(struct bf_rlbucket *);
 
 #endif

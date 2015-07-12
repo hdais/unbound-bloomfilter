@@ -119,6 +119,7 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_DNSTAP_LOG_FORWARDER_QUERY_MESSAGES
 %token VAR_DNSTAP_LOG_FORWARDER_RESPONSE_MESSAGES
 %token VAR_BLOOMFILTER_SIZE VAR_BLOOMFILTER_INTERVAL VAR_BLOOMFILTER_THRESHOLD
+%token VAR_BLOOMFILTER_RATELIMIT
 
 %%
 toplevelvars: /* empty */ | toplevelvars toplevelvar ;
@@ -180,7 +181,7 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_dns64_prefix | server_dns64_synthall |
 	server_infra_cache_min_rtt |
 	server_bloomfilter_size | server_bloomfilter_interval |
-	server_bloomfilter_threshold
+	server_bloomfilter_threshold | server_bloomfilter_ratelimit
 	;
 stubstart: VAR_STUB_ZONE
 	{
@@ -1223,6 +1224,14 @@ server_bloomfilter_threshold: VAR_BLOOMFILTER_THRESHOLD STRING_ARG
 		if(atoi($2) == 0 && strcmp($2, "0") != 0 || atoi($2) < 1)
 		yyerror("positive number expected");
 		else cfg_parser->cfg->bloomfilter_threshold = atoi($2);
+	}
+	;
+server_bloomfilter_ratelimit: VAR_BLOOMFILTER_RATELIMIT STRING_ARG
+	{
+		OUTYY(("P(bloomfilter-ratelimit:%s)\n", $2));
+		if(atoi($2) == 0 && strcmp($2, "0") != 0 || atoi($2) < 1)
+		yyerror("positive number expected");
+		else cfg_parser->cfg->bloomfilter_ratelimit = atoi($2);
 	}
 	;
 stub_name: VAR_NAME STRING_ARG

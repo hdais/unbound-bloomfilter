@@ -347,6 +347,8 @@ struct config_file {
 	int bloomfilter_interval;
 	/** bloomfilter threshold */
 	int bloomfilter_threshold;
+	/** bloomfilter ratelimit */
+	int bloomfilter_ratelimit;
 };
 
 /** from cfg username, after daemonise setup performed */

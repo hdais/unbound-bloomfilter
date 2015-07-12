@@ -533,7 +533,8 @@ daemon_fork(struct daemon* daemon)
 	if(!local_zones_apply_cfg(daemon->local_zones, daemon->cfg))
 		fatal_exit("Could not set up local zones");
 	if(!(daemon->bloomfilter = bf_create(daemon->cfg->bloomfilter_size, 7, daemon->rand,
-		time(NULL), daemon->cfg->bloomfilter_interval, daemon->cfg->bloomfilter_threshold)))
+		time(NULL), daemon->cfg->bloomfilter_interval,
+		daemon->cfg->bloomfilter_threshold, daemon->cfg->bloomfilter_ratelimit)))
 	  fatal_exit("Could not create bloomfilter: out of memory");
 
 	/* setup modules */

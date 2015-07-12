@@ -213,6 +213,7 @@ config_create(void)
 	cfg->bloomfilter_size = 0;
 	cfg->bloomfilter_interval = 86400;
 	cfg->bloomfilter_threshold = 0;
+	cfg->bloomfilter_ratelimit = 0;
 	if(!(cfg->server_key_file = strdup(RUN_DIR"/unbound_server.key"))) 
 		goto error_exit;
 	if(!(cfg->server_cert_file = strdup(RUN_DIR"/unbound_server.pem"))) 
@@ -450,6 +451,7 @@ int config_set_option(struct config_file* cfg, const char* opt,
 	else S_MEMSIZE("bloomfilter-size", bloomfilter_size)
 	else S_NUMBER_NONZERO("bloomfilter-interval:", bloomfilter_interval)
 	else S_NUMBER_NONZERO("bloomfilter-threshold:", bloomfilter_threshold)
+	else S_NUMBER_NONZERO("bloomfilter-ratelimit:", bloomfilter_ratelimit)
 	/* val_sig_skew_min and max are copied into val_env during init,
 	 * so this does not update val_env with set_option */
 	else if(strcmp(opt, "val-sig-skew-min:") == 0)
@@ -714,6 +716,7 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_MEM(opt, "bloomfilter-size", bloomfilter_size)
 	else O_DEC(opt, "bloomfilter-interval", bloomfilter_interval)
 	else O_DEC(opt, "bloomfilter-threshold", bloomfilter_threshold)
+	else O_DEC(opt, "bloomfilter-ratelimit", bloomfilter_ratelimit)
 	/* not here:
 	 * outgoing-permit, outgoing-avoid - have list of ports
 	 * local-zone - zones and nodefault variables

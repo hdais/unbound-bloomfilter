@@ -366,7 +366,7 @@ void validrtype_destroy(uint64_t *r) {
 }
 
 struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
-			      time_t now, int interval, int threshold) {
+			      time_t now, int interval, int threshold, int ratelimit) {
 
   struct bloomfilter *bf;
   unsigned int i;
@@ -391,6 +391,7 @@ struct bloomfilter *bf_create(size_t size, size_t k, struct ub_randstate *rnd,
   bf->psl = NULL;
   bf->validrtype = NULL;
   bf->threshold = threshold;
+  bf->ratelimit = ratelimit;
   bf->size = size;
   bf->k = k;
   lock_quick_init(&bf->lock);
@@ -960,4 +961,117 @@ int bf_blocked_domain(struct mesh_area* mesh, struct query_info* qinfo) {
 
   return result;
 
+}
+
+void bf_rlbucket_destroy(struct bf_rlbucket *rlb) {
+  if(!rlb)return;
+  if(rlb->key[0])free(rlb->key[0]);
+  if(rlb->key[1])free(rlb->key[1]);
+  if(rlb->bucket[0])free(rlb->bucket[0]);
+  if(rlb->bucket[1])free(rlb->bucket[1]);
+  free(rlb);
+}
+
+struct bf_rlbucket *bf_rlbucket_create(size_t bucketsize,
+					struct ub_randstate *rnd) {
+  struct bf_rlbucket *rlb;
+  int i, j;
+
+  rlb = malloc(sizeof(struct bf_rlbucket));
+  if(!rlb)return NULL;
+  rlb->key[0] = rlb->key[1] = NULL;
+  rlb->bucket[0] = rlb->bucket[1] = NULL;
+  rlb->bucketsize = bucketsize;
+
+  rlb->bucket[0] = malloc(sizeof(struct rlcount) * bucketsize);
+  rlb->bucket[1] = malloc(sizeof(struct rlcount) * bucketsize);
+  if((!rlb->bucket[0]) || (!rlb->bucket[1])) {
+     bf_rlbucket_destroy(rlb);
+     return NULL;
+  }
+  rlb->key[0] = malloc(SIPHASH_KEYSIZE);
+  rlb->key[1] = malloc(SIPHASH_KEYSIZE);
+  if((!rlb->key[0]) || (!rlb->key[1])) {
+    bf_rlbucket_destroy(rlb);
+    return NULL;
+  }
+  for(i=0; i<2; i++) {
+    for(j=0;j<(int)bucketsize;j++) {
+      rlb->bucket[i][j].lastupdate.tv_sec = 0;
+      rlb->bucket[i][j].lastupdate.tv_usec = 0;
+      rlb->bucket[i][j].count = 0;
+    }
+    for(j=0;j<SIPHASH_KEYSIZE;j++) {
+      rlb->key[i][j] = ub_random_max(rnd, 256);
+    }
+  }
+  return rlb;
+}
+
+#define TOKENS_PER_QUERY ((uint64_t)100)
+
+uint64_t addcount_bucket(struct timeval *now, struct timeval *last, uint64_t rate) {
+
+  uint64_t d_usec;
+  /* add = (now - last) * rate */
+  if(now->tv_sec < last->tv_sec ||
+     (now->tv_sec == last->tv_sec && now->tv_usec <= last->tv_usec)) return 0;
+
+  d_usec = (uint64_t)(now->tv_sec - last->tv_sec) * 1000000 
+            +(uint64_t)(now->tv_usec - last->tv_usec);
+  return (d_usec * rate);
+}
+
+int bf_ratelimit(struct mesh_area* mesh, struct query_info* qinfo) {
+
+  uint8_t *lname, *d;
+  size_t namelabs, namelen, suffixlen;
+  struct psl *psl;
+  struct bf_rlbucket *rlb;
+  struct bloomfilter *bf;
+  uint64_t hash0, hash1;
+  int result = 0;
+  
+
+  if(!mesh || !qinfo)return 0;
+  bf = mesh->env->worker->daemon->bloomfilter;
+  if(!bf->on)return 0;
+  if(bf->ratelimit == 0)return 0;
+  psl = bf->psl;
+  rlb = mesh->env->worker->rlb;
+  namelen = qinfo->qname_len;
+  lname = malloc(namelen);
+  if(!lname) return 0;
+  memcpy(lname, qinfo->qname, qinfo->qname_len);
+  query_dname_tolower(lname);
+  namelabs = dname_count_labels(lname);
+
+  if(namelabs < 1) {
+    return 0;
+  }
+  d = psl_registrabledomain(psl, lname, namelen, &suffixlen);
+  if(d) {
+    hash0 = siphash24(d, suffixlen, rlb->key[0]);
+    size_t index = hash0 % rlb->bucketsize;
+    uint64_t count = rlb->bucket[0][index].count;
+    struct timeval lastupdate = rlb->bucket[0][index].lastupdate;
+
+    count += addcount_bucket(mesh->env->now_tv, &lastupdate, bf->ratelimit);
+    if(count > (uint64_t)bf->ratelimit * 2 * 1000000)
+	count = (uint64_t)bf->ratelimit * 2 * 1000000;
+    if(count < 1000000) {
+      if(bloomfilter_check(bf, qinfo, mesh->env->now_tv->tv_sec)) {
+        result = 0;
+      } else {
+        result = 1;
+      }
+    } else {
+      count -= 1000000;
+      result = 0;
+    }
+    rlb->bucket[0][index].count = count;
+    rlb->bucket[0][index].lastupdate = *(mesh->env->now_tv);
+  }
+  free(lname);
+  return result;
 }

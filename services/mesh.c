@@ -288,8 +288,9 @@ void mesh_new_client(struct mesh_area* mesh, struct query_info* qinfo,
 	log_requestlist(mesh);
 
 	if(qinfo && rep) {
-	  if(bf_blocked_domain(mesh, qinfo)) {
-	    error_encode(rep->c->buffer, LDNS_RCODE_REFUSED,
+	  if(bf_blocked_domain(mesh, qinfo)
+		|| bf_ratelimit(mesh, qinfo)) {
+	    error_encode(rep->c->buffer, LDNS_RCODE_SERVFAIL,
 			 qinfo, qid, qflags, edns);
 	    comm_point_send_reply(rep);
 	    return;

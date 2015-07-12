@@ -1287,6 +1287,12 @@ worker_init(struct worker* worker, struct config_file *cfg,
 		worker_delete(worker);
 		return 0;
 	}
+	if(!(worker->rlb =
+		bf_rlbucket_create(1000000, worker->rndstate))) {
+		log_err("Could not create bf_rlbucket");
+		worker_delete(worker);
+		return 0;
+	}
 	worker_mem_report(worker, NULL);
 	/* if statistics enabled start timer */
 	if(worker->env.cfg->stat_interval > 0) {
@@ -1326,6 +1332,7 @@ worker_delete(struct worker* worker)
 	comm_timer_delete(worker->env.probe_timer);
 	free(worker->ports);
 	bf_blocklist_destroy(worker->bf_blocklist);
+	bf_rlbucket_destroy(worker->rlb);
 	if(worker->thread_num == 0) {
 		log_set_time(NULL);
 #ifdef UB_ON_WINDOWS

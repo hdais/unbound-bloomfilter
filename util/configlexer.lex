@@ -354,6 +354,8 @@ bloomfilter-interval{COLON}	{
 		YDVAR(1, VAR_BLOOMFILTER_INTERVAL) }
 bloomfilter-threshold{COLON}	{
 		YDVAR(1, VAR_BLOOMFILTER_THRESHOLD) }
+bloomfilter-ratelimit{COLON}	{
+		YDVAR(1, VAR_BLOOMFILTER_RATELIMIT) }
 <INITIAL,val>{NEWLINE}		{ LEXOUT(("NL\n")); cfg_parser->line++; }
 
 	/* Quoted strings. Strip leading and ending quotes */

@@ -126,6 +126,9 @@ struct worker {
 #endif
 	/** bloomfiltered domain list */
 	struct bf_blocklist *bf_blocklist;
+
+	/** ratelimit hash bucket for bloomfilter */
+	struct bf_rlbucket *rlb;
 };
 
 /**
