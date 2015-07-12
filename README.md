@@ -41,7 +41,7 @@ Removing filtered domains:
 
 Currently two detection algorithm are implemented.
 
-### Bloomfiltering to domain with many cache-missed queries
+### Bloomfiltering domains with many cache-missed queries
 
 An Option in unbound.conf:
 
@@ -49,7 +49,7 @@ An Option in unbound.conf:
 
 automatically applies bloomfilter to domains whose recursion (cache miss) per second exceeds `bloomfilter-ratelimit`.
 
-### Bloomfiltering to domain with many long-standing queries
+### Bloomfiltering domains with many long-standing queries
 
 An Option in unbound.conf:
 
