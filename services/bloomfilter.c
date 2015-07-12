@@ -1017,8 +1017,10 @@ uint64_t addcount_bucket(struct timeval *now, struct timeval *last, uint64_t rat
   if(now->tv_sec < last->tv_sec ||
      (now->tv_sec == last->tv_sec && now->tv_usec <= last->tv_usec)) return 0;
 
-  d_usec = (uint64_t)(now->tv_sec - last->tv_sec) * 1000000 
-            +(uint64_t)(now->tv_usec - last->tv_usec);
+  d_usec = (uint64_t)(now->tv_sec - last->tv_sec) * (uint64_t)1000000; 
+  d_usec += (now->tv_usec - last->tv_usec);
+
+  if(d_usec > 10000000)d_usec=10000000;
   return (d_usec * rate);
 }
 
