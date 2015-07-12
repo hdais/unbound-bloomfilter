@@ -39,15 +39,23 @@ Removing filtered domains:
   
 ## Automatic detection of domains under attack
 
-This option in unbound.conf:
+Currently two detection algorithm are implemented.
 
-    bloomfilter-threshold
+### Bloomfiltering to domain with many cache-missed queries
 
-automatically applies bloomfilter to domains whose number of long-lived (> 2.0 seconds) query in requestlist exceeds `bloomfilter-threshold`.
+An Option in unbound.conf:
 
-### The detection algorithm
+    bloomfilter-ratelimit: <number_of_queries_per_second>
 
-The detection algorithm periodically scans requestlist. Suppose that these client queries are in requestlist:
+automatically applies bloomfilter to domains whose recursion (cache miss) per second exceeds `bloomfilter-ratelimit`.
+
+### Bloomfiltering to domain with many long-standing queries
+
+An Option in unbound.conf:
+
+    bloomfilter-threshold: <number_of_long_standing_queries>
+
+automatically applies bloomfilter to domains whose number of long-standing (> 2.0 seconds) query in requestlist exceeds `bloomfilter-threshold`. The detection algorithm periodically scans requestlist. Suppose that these client queries are in requestlist:
 
     QNAME                     elapsed time (in secs)
     ------------------------------------------------------
@@ -58,19 +66,20 @@ The detection algorithm periodically scans requestlist. Suppose that these clien
     www.example2.co.uk        2.1
     www.example3.info         1.2
 
-It sums up number of long-lived (elapsed time > 2.0) qnames per domain. Public suffix list is used to classify domains.
+It sums up number of long-standing (elapsed time > 2.0) qnames per domain. Public suffix list is used to classify domains.
 
-    domain          num_of_longlived_queries
+    domain          num_of_long_standing_queries
     -----------------------------
     example1.com    3
     example2.co.uk  1
 
-And it bloomfilters the domains whose `num_of_longlived_queries` exceeds `bloomfilter-threshold`.
-
+And it bloomfilters the domains whose `num_of_long_standing_queries` exceeds `bloomfilter-threshold`.
 If a domain has been already bloomfiltered and its `num_of_longlived_queries` exceeds `bloomfilter-threshold * 2` (bloomfilter is not effective for any reason) ALL queries for the domain is refused.
 
 ### `unbound.conf` example
+
      server:
       bloomfilter-size: 1024m
       bloomfilter-interval: 86400
       bloomfilter-threshold: 100
+      bloomfilter-ratelimit: 100
