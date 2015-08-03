@@ -787,6 +787,7 @@ void log_requestlist(struct mesh_area* mesh) {
   now = mesh->env->now_tv->tv_sec;
   blocklist = mesh->env->worker->bf_blocklist;
   bloomfilter = mesh->env->worker->daemon->bloomfilter;
+  if(!bloomfilter->on)return;
 
   if(bloomfilter->threshold < 1)return;
   if(now - blocklist->lastupdate < BF_BLOCKLIST_UPDATE_INTERVAL)return;
