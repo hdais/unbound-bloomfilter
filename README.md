@@ -82,4 +82,4 @@ If a domain has been already bloomfiltered and its `num_of_longlived_queries` ex
       bloomfilter-size: 1024m
       bloomfilter-interval: 86400
       bloomfilter-threshold: 100
-      bloomfilter-ratelimit: 100
+      bloomfilter-ratelimit: 1000
