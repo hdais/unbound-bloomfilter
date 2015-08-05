@@ -26,14 +26,13 @@ Note that actually two (2) Bloomfilter bitfields are allocated. So if you specif
       bloomfilter-size: 1024m
       bloomfilter-interval: 86400
 
-
 # To Protect Unbound (and attacked domain) from random subdomain attack
 
-## Setting bloomfiltered domains manually
+## Setting a zone to be bloomfiltered manually
 
     $ unbound-control local_zone example.com bloomfilter
 
-Removing filtered domains:
+Removing a filtered zone:
 
     $ unbound-control local_zone_remove example.com
   
@@ -41,21 +40,21 @@ Removing filtered domains:
 
 Currently two detection algorithm are implemented.
 
-### Bloomfiltering domains with many cache-missed queries
+### Bloomfilter zones receiving many cache-missed queries
 
-An Option in unbound.conf:
+Option in unbound.conf:
 
     bloomfilter-ratelimit: <number_of_queries_per_second>
 
-automatically applies bloomfilter to domains whose recursion (cache miss) per second exceeds `bloomfilter-ratelimit`.
+automatically applies bloomfilter to zones whose recursion (cache miss) per second exceeds `bloomfilter-ratelimit`.
 
-### Bloomfiltering domains with many long-standing queries
+### Bloomfilter zones receiving many long-standing queries
 
-An Option in unbound.conf:
+Option in unbound.conf:
 
     bloomfilter-threshold: <number_of_long_standing_queries>
 
-automatically applies bloomfilter to domains whose number of long-standing (> 2.0 seconds) query in requestlist exceeds `bloomfilter-threshold`. The detection algorithm periodically scans requestlist. Suppose that these client queries are in requestlist:
+automatically applies bloomfilter to zones whose number of long-standing (> 2.0 seconds) query in requestlist exceeds `bloomfilter-threshold`. The detection algorithm periodically scans requestlist. Suppose that these client queries are in requestlist:
 
     QNAME                     elapsed time (in secs)
     ------------------------------------------------------
@@ -66,15 +65,15 @@ automatically applies bloomfilter to domains whose number of long-standing (> 2.
     www.example2.co.uk        2.1
     www.example3.info         1.2
 
-It sums up number of long-standing (elapsed time > 2.0) qnames per domain. Public suffix list is used to classify domains.
+It sums up number of long-standing (elapsed time > 2.0) qnames per zone. Public suffix list is used to determine zone boundaries.
 
-    domain          num_of_long_standing_queries
+    zone            num_of_long_standing_queries
     -----------------------------
     example1.com    3
     example2.co.uk  1
 
-And it bloomfilters the domains whose `num_of_long_standing_queries` exceeds `bloomfilter-threshold`.
-If a domain has been already bloomfiltered and its `num_of_longlived_queries` exceeds `bloomfilter-threshold * 2` (bloomfilter is not effective for any reason) ALL queries for the domain is refused.
+And it bloomfilters the zones whose `num_of_long_standing_queries` exceeds `bloomfilter-threshold`.
+If a zone has been already bloomfiltered and its `num_of_longlived_queries` exceeds `bloomfilter-threshold * 2` (bloomfilter is not effective for any reason) ALL queries for the zone is refused.
 
 ### `unbound.conf` example
 
