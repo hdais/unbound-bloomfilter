@@ -56,7 +56,7 @@
 #include "util/fptr_wlist.h"
 #include "util/alloc.h"
 #include "util/config_file.h"
-#include "ldns/sbuffer.h"
+#include "sldns/sbuffer.h"
 #include "daemon/daemon.h"
 #include "daemon/worker.h"
 

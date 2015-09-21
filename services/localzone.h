@@ -74,6 +74,8 @@ enum localzone_type {
 	local_zone_nodefault,
 	/** log client address, but no block (transparent) */
 	local_zone_inform,
+	/** log client address, and block (drop) */
+	local_zone_inform_deny,
 	/** bloomfilter */
 	local_zone_bloomfilter
 };

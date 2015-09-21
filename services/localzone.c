@@ -40,8 +40,8 @@
  */
 #include "config.h"
 #include "services/localzone.h"
-#include "ldns/str2wire.h"
-#include "ldns/sbuffer.h"
+#include "sldns/str2wire.h"
+#include "sldns/sbuffer.h"
 #include "util/regional.h"
 #include "util/config_file.h"
 #include "util/data/dname.h"
@@ -1031,6 +1031,10 @@ void local_zones_print(struct local_zones* zones)
 			log_nametypeclass(0, "bloomfilter zone",
 				z->name, 0, z->dclass);
 			break;
+		case local_zone_inform_deny:
+			log_nametypeclass(0, "inform_deny zone", 
+				z->name, 0, z->dclass);
+			break;
 		default:
 			log_nametypeclass(0, "badtyped zone", 
 				z->name, 0, z->dclass);
@@ -1129,7 +1133,7 @@ lz_zone_answer(struct local_zone* z, struct query_info* qinfo,
 	struct local_data* ld, int *bloomfilter)
 {
 	*bloomfilter = 0;
-	if(z->type == local_zone_deny) {
+	if(z->type == local_zone_deny || z->type == local_zone_inform_deny) {
 		/** no reply at all, signal caller by clearing buffer. */
 		sldns_buffer_clear(buf);
 		sldns_buffer_flip(buf);
@@ -1219,7 +1223,8 @@ local_zones_answer(struct local_zones* zones, struct query_info* qinfo,
 	lock_rw_rdlock(&z->lock);
 	lock_rw_unlock(&zones->lock);
 
-	if(z->type == local_zone_inform && repinfo)
+	if((z->type == local_zone_inform || z->type == local_zone_inform_deny)
+		&& repinfo)
 		lz_inform_print(z, qinfo, repinfo);
 
 	if(local_data_answer(z, qinfo, edns, buf, temp, labs, &ld)) {
@@ -1242,6 +1247,7 @@ const char* local_zone_type2str(enum localzone_type t)
 		case local_zone_static: return "static";
 		case local_zone_nodefault: return "nodefault";
 		case local_zone_inform: return "inform";
+		case local_zone_inform_deny: return "inform_deny";
 		case local_zone_bloomfilter: return "bloomfilter";
 	}
 	return "badtyped"; 
@@ -1263,6 +1269,8 @@ int local_zone_str2type(const char* type, enum localzone_type* t)
 		*t = local_zone_redirect;
 	else if(strcmp(type, "inform") == 0)
 		*t = local_zone_inform;
+	else if(strcmp(type, "inform_deny") == 0)
+		*t = local_zone_inform_deny;
 	else if(strcmp(type, "bloomfilter") == 0)
 		*t = local_zone_bloomfilter;
 	else return 0;
