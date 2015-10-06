@@ -118,12 +118,12 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_DNSTAP_LOG_CLIENT_RESPONSE_MESSAGES
 %token VAR_DNSTAP_LOG_FORWARDER_QUERY_MESSAGES
 %token VAR_DNSTAP_LOG_FORWARDER_RESPONSE_MESSAGES
+%token VAR_BLOOMFILTER_SIZE VAR_BLOOMFILTER_INTERVAL VAR_BLOOMFILTER_THRESHOLD
+%token VAR_BLOOMFILTER_RATELIMIT
 %token VAR_HARDEN_ALGO_DOWNGRADE VAR_IP_TRANSPARENT
 %token VAR_RATELIMIT VAR_RATELIMIT_SLABS VAR_RATELIMIT_SIZE
 %token VAR_RATELIMIT_FOR_DOMAIN VAR_RATELIMIT_BELOW_DOMAIN VAR_RATELIMIT_FACTOR
-%token VAR_CAPS_WHITELIST VAR_CACHE_MAX_NEGATIVE_TTL
-%token VAR_BLOOMFILTER_SIZE VAR_BLOOMFILTER_INTERVAL VAR_BLOOMFILTER_THRESHOLD
-%token VAR_BLOOMFILTER_RATELIMIT
+%token VAR_CAPS_WHITELIST VAR_CACHE_MAX_NEGATIVE_TTL VAR_PERMIT_SMALL_HOLDDOWN
 
 %%
 toplevelvars: /* empty */ | toplevelvars toplevelvar ;
@@ -183,13 +183,14 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_minimal_responses | server_rrset_roundrobin | server_max_udp_size |
 	server_so_reuseport | server_delay_close | server_unblock_lan_zones |
 	server_dns64_prefix | server_dns64_synthall |
+	server_bloomfilter_size | server_bloomfilter_interval |
+	server_bloomfilter_threshold | server_bloomfilter_ratelimit |
 	server_infra_cache_min_rtt | server_harden_algo_downgrade |
 	server_ip_transparent | server_ratelimit | server_ratelimit_slabs |
 	server_ratelimit_size | server_ratelimit_for_domain |
 	server_ratelimit_below_domain | server_ratelimit_factor |
 	server_caps_whitelist | server_cache_max_negative_ttl |
-	server_bloomfilter_size | server_bloomfilter_interval |
-	server_bloomfilter_threshold | server_bloomfilter_ratelimit
+	server_permit_small_holddown
 	;
 stubstart: VAR_STUB_ZONE
 	{
@@ -1129,6 +1130,15 @@ server_keep_missing: VAR_KEEP_MISSING STRING_ARG
 		free($2);
 	}
 	;
+server_permit_small_holddown: VAR_PERMIT_SMALL_HOLDDOWN STRING_ARG
+	{
+		OUTYY(("P(server_permit_small_holddown:%s)\n", $2));
+		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
+			yyerror("expected yes or no.");
+		else cfg_parser->cfg->permit_small_holddown =
+			(strcmp($2, "yes")==0);
+		free($2);
+	}
 server_key_cache_size: VAR_KEY_CACHE_SIZE STRING_ARG
 	{
 		OUTYY(("P(server_key_cache_size:%s)\n", $2));
