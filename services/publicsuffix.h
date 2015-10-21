@@ -1,5 +1,5 @@
 /* taken from https://publicsuffix.org/list/effective_tld_names.dat */
-/* at Tue Oct  6 15:44:53 2015 UTC */
+/* at Wed Oct 21 14:47:17 2015 UTC */
 #ifndef SERVICES_PUBLICSUFFIXLIST_H
 #define SERVICES_PUBLICSUFFIXLIST_H
 static char *publicsuffix[] = {
@@ -6245,6 +6245,7 @@ static char *publicsuffix[] = {
 	"cleaning",
 	"click",
 	"clinic",
+	"clinique",
 	"clothing",
 	"cloud",
 	"club",
@@ -6258,6 +6259,7 @@ static char *publicsuffix[] = {
 	"commbank",
 	"community",
 	"company",
+	"compare",
 	"computer",
 	"comsec",
 	"condos",
@@ -6590,6 +6592,7 @@ static char *publicsuffix[] = {
 	"lacaixa",
 	"ladbrokes",
 	"lamborghini",
+	"lamer",
 	"lancaster",
 	"lancia",
 	"lancome",
@@ -6768,6 +6771,7 @@ static char *publicsuffix[] = {
 	"orange",
 	"organic",
 	"orientexpress",
+	"origins",
 	"osaka",
 	"otsuka",
 	"ott",
@@ -6910,6 +6914,7 @@ static char *publicsuffix[] = {
 	"secure",
 	"security",
 	"seek",
+	"select",
 	"sener",
 	"services",
 	"ses",
@@ -7113,6 +7118,7 @@ static char *publicsuffix[] = {
 	"work",
 	"works",
 	"world",
+	"wow",
 	"wtc",
 	"wtf",
 	"xbox",
@@ -7167,6 +7173,7 @@ static char *publicsuffix[] = {
 	"xn--fzys8d69uvgm",
 	"xn--g2xx48c",
 	"xn--gckr3f0f",
+	"xn--gk3at1e",
 	"xn--hxt814e",
 	"xn--i1b6b1a6a2e",
 	"xn--imr513n",
