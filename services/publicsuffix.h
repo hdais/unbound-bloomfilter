@@ -1,5 +1,5 @@
 /* taken from https://publicsuffix.org/list/effective_tld_names.dat */
-/* at Wed Oct 21 14:47:17 2015 UTC */
+/* at Sun Nov 15 12:53:54 2015 UTC */
 #ifndef SERVICES_PUBLICSUFFIXLIST_H
 #define SERVICES_PUBLICSUFFIXLIST_H
 static char *publicsuffix[] = {
@@ -6126,6 +6126,7 @@ static char *publicsuffix[] = {
 	"barclays",
 	"barefoot",
 	"bargains",
+	"baseball",
 	"basketball",
 	"bauhaus",
 	"bayern",
@@ -6212,6 +6213,7 @@ static char *publicsuffix[] = {
 	"cash",
 	"casino",
 	"catering",
+	"catholic",
 	"cba",
 	"cbn",
 	"cbre",
@@ -6318,6 +6320,7 @@ static char *publicsuffix[] = {
 	"discount",
 	"discover",
 	"dish",
+	"diy",
 	"dnp",
 	"docs",
 	"dodge",
@@ -6740,6 +6743,7 @@ static char *publicsuffix[] = {
 	"nikon",
 	"ninja",
 	"nissan",
+	"nissay",
 	"nokia",
 	"northwesternmutual",
 	"norton",
@@ -6832,6 +6836,7 @@ static char *publicsuffix[] = {
 	"pru",
 	"prudential",
 	"pub",
+	"pwc",
 	"qpon",
 	"quebec",
 	"quest",
@@ -7053,6 +7058,7 @@ static char *publicsuffix[] = {
 	"ubank",
 	"ubs",
 	"uconnect",
+	"unicom",
 	"university",
 	"uno",
 	"uol",
@@ -7145,6 +7151,7 @@ static char *publicsuffix[] = {
 	"xn--6frz82g",
 	"xn--6qq986b3xl",
 	"xn--80adxhks",
+	"xn--80aqecdr1a",
 	"xn--80asehdb",
 	"xn--80aswg",
 	"xn--8y0a063a",
@@ -7190,6 +7197,7 @@ static char *publicsuffix[] = {
 	"xn--mgbab2bd",
 	"xn--mgbb9fbpob",
 	"xn--mgbca7dzdo",
+	"xn--mgbi4ecexp",
 	"xn--mgbt3dhd",
 	"xn--mk1bu44c",
 	"xn--mxtq1m",
@@ -7208,6 +7216,7 @@ static char *publicsuffix[] = {
 	"xn--ses554g",
 	"xn--t60b56a",
 	"xn--tckwe",
+	"xn--tiq49xqyj",
 	"xn--unup4y",
 	"xn--vermgensberater-ctb",
 	"xn--vermgensberatung-pwb",
