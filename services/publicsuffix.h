@@ -1,5 +1,5 @@
 /* taken from https://publicsuffix.org/list/effective_tld_names.dat */
-/* at Sun Nov 15 12:53:54 2015 UTC */
+/* at Mon Nov 23 14:08:36 2015 UTC */
 #ifndef SERVICES_PUBLICSUFFIXLIST_H
 #define SERVICES_PUBLICSUFFIXLIST_H
 static char *publicsuffix[] = {
@@ -135,11 +135,6 @@ static char *publicsuffix[] = {
 	"net.al",
 	"org.al",
 	"am",
-	"an",
-	"com.an",
-	"net.an",
-	"org.an",
-	"edu.an",
 	"ao",
 	"ed.ao",
 	"gv.ao",
@@ -3970,7 +3965,20 @@ static char *publicsuffix[] = {
 	"gov.ng",
 	"mil.ng",
 	"mobi.ng",
-	"*.ni",
+	"com.ni",
+	"gob.ni",
+	"edu.ni",
+	"org.ni",
+	"nom.ni",
+	"net.ni",
+	"mil.ni",
+	"co.ni",
+	"biz.ni",
+	"web.ni",
+	"int.ni",
+	"ac.ni",
+	"in.ni",
+	"info.ni",
 	"nl",
 	"bv.nl",
 	"no",
@@ -5226,7 +5234,6 @@ static char *publicsuffix[] = {
 	"k-uralsk.ru",
 	"kustanai.ru",
 	"kuzbass.ru",
-	"magnitka.ru",
 	"mytis.ru",
 	"nakhodka.ru",
 	"nkz.ru",
