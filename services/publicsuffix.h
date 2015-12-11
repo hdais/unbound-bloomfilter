@@ -1,5 +1,5 @@
 /* taken from https://publicsuffix.org/list/effective_tld_names.dat */
-/* at Mon Nov 23 14:08:36 2015 UTC */
+/* at Fri Dec 11 18:20:42 2015 UTC */
 #ifndef SERVICES_PUBLICSUFFIXLIST_H
 #define SERVICES_PUBLICSUFFIXLIST_H
 static char *publicsuffix[] = {
@@ -80,7 +80,6 @@ static char *publicsuffix[] = {
 	"logistics.aero",
 	"magazine.aero",
 	"maintenance.aero",
-	"marketplace.aero",
 	"media.aero",
 	"microlight.aero",
 	"modelling.aero",
@@ -103,7 +102,6 @@ static char *publicsuffix[] = {
 	"skydiving.aero",
 	"software.aero",
 	"student.aero",
-	"taxi.aero",
 	"trader.aero",
 	"trading.aero",
 	"trainer.aero",
